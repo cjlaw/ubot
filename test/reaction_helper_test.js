@@ -35,13 +35,13 @@ describe('#reaction: twss', () => {
 
   it('should return a message about which message was twss-d', () => {
     reaction.message.content = 'test is too short';
-    let result = ReactionHelper.handleTwssReaction(reaction, user, emoji);
-    expect(result).to.equal(`<@5678> said ${emoji} to "_test is too short_"`); 
+    let result = ReactionHelper.handleTwssReaction(reaction, user);
+    expect(result).to.equal(`<@5678> said ${reaction.emoji} to "_test is too short_"`); 
   });
 
   it('should return a message about which link was twss-d', () => {
     reaction.message.content = 'https://too.short.test';
-    let result = ReactionHelper.handleTwssReaction(reaction, user, emoji);
-    expect(result).to.equal(`<@5678> said ${emoji} to https://too.short.test`); 
+    let result = ReactionHelper.handleTwssReaction(reaction, user);
+    expect(result).to.equal(`<@5678> said ${reaction.emoji} to https://too.short.test`); 
   });
 });

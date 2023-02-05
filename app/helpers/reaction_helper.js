@@ -4,9 +4,9 @@ class ReactionHelper {
     return `<@${reaction.message.author.id}>++ received an upvote from <@${user.id}> for ${content}`;
   }
 
-  static handleTwssReaction(reaction, user, emoji) {
+  static handleTwssReaction(reaction, user) {
     const content = _formatContent(reaction.message.content)
-    return `<@${user.id}> said ${emoji} to ${content}`;
+    return `<@${user.id}> said ${reaction.emoji} to ${content}`;
   }
 }
 
