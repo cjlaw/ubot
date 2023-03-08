@@ -1,47 +1,98 @@
-require('dotenv').config();
+require("dotenv").config();
+const fs = require("node:fs");
+const path = require("node:path");
+const {
+  Client,
+  Collection,
+  Events,
+  GatewayIntentBits,
+  Partials,
+} = require("discord.js");
+const token = process.env.bot_token;
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildMessageReactions,
+    GatewayIntentBits.MessageContent,
+  ],
+  partials: [Partials.Message, Partials.Channel, Partials.Reaction],
+});
+const ReactionHelper = require("./helpers/reaction_helper");
+const ArnieHelper = require("./helpers/arnie_helper");
 
-const commandRouter = require('./app/command_router');
-const ReactionHelper = require('./app/helpers/reaction_helper');
-const Discord = require('discord.js');
-const bot = new Discord.Client();
-const TOKEN = process.env.bot_token;
-const SBFVGS_ID = '216034888372060162';
+client.commands = new Collection();
+const commandsPath = path.join(__dirname, "commands");
+const commandFiles = fs
+  .readdirSync(commandsPath)
+  .filter((file) => file.endsWith(".js"));
 
-bot.on('message', message => {
+for (const file of commandFiles) {
+  const filePath = path.join(commandsPath, file);
+  const command = require(filePath);
+  client.commands.set(command.data.name, command);
+}
 
-	if (process.env.botenv === "production") {
-		if (message.content.startsWith("!")) {
-			this.commandRouter.route(message);
-		}
-	} else {
-		if (message.content.startsWith("?")) {
-			this.commandRouter.route(message);
-		}
-	}
-
-	if (message.content.match(/Arnie/i) || message.content.match(/Arnold/i)) {
-		message.content += " arnie"; // Make sure "arnie" is present to match the command name
-		this.commandRouter.route(message);
-	}
+client.once(Events.ClientReady, () => {
+  console.log("ubot is ready!");
 });
 
-bot.on('ready', () => {
-	bot.user.setGame('Latest SBFVGS Podcast');
-	this.commandRouter = new commandRouter(bot, SBFVGS_ID);
-	console.log('this bot is now ready.');
+client.on(Events.InteractionCreate, async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+
+  const command = client.commands.get(interaction.commandName);
+
+  if (!command) return;
+
+  try {
+    await command.execute(interaction);
+  } catch (error) {
+    console.error(error);
+    if (interaction.replied || interaction.deferred) {
+      await interaction.followUp({
+        content: "There was an error while executing this command!",
+        ephemeral: true,
+      });
+    } else {
+      await interaction.reply({
+        content: "There was an error while executing this command!",
+        ephemeral: true,
+      });
+    }
+  }
 });
 
-bot.on('guildMemberAdd', member => {
-	member.guild.defaultChannel.send(`Welcome to the server, ${member}!`);
+client.on(Events.MessageReactionAdd, async (reaction, user) => {
+  // When a reaction is received, check if the structure is partial
+  if (reaction.partial) {
+    // If the message this reaction belongs to was removed, the fetching might result in an API error which should be handled
+    try {
+      await reaction.fetch();
+    } catch (error) {
+      console.error("Something went wrong when fetching the message:", error);
+      // Return as `reaction.message.author` may be undefined/null
+      return;
+    }
+  }
+
+  if (reaction.emoji.name === "upvote") {
+    reaction.message.channel.send(
+      ReactionHelper.handleUpvoteReaction(reaction, user)
+    );
+  }
+
+  if (reaction.emoji.name === "twss") {
+    reaction.message.channel.send(
+      ReactionHelper.handleTwssReaction(reaction, user)
+    );
+  }
 });
 
-bot.on('messageReactionAdd', (reaction, user) => {
-	if (reaction.emoji.name === 'upvote') {
-		reaction.message.channel.send(ReactionHelper.handleUpvoteReaction(reaction, user));
-	}
-	if (reaction.emoji.name === 'twss') {
-		reaction.message.channel.send(ReactionHelper.handleTwssReaction(reaction, user));
-	}
+client.on(Events.MessageCreate, async (message) => {
+  if (!message.content) return;
+
+  let arnieMessage = ArnieHelper.handleArnieMention(message);
+  if (arnieMessage) message.channel.send(arnieMessage);
 });
 
-bot.login(TOKEN);
+client.login(token);
