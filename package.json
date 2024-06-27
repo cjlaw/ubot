@@ -15,6 +15,7 @@
     "url": "git+https://github.com/cjlaw/sbfbot.git"
   },
   "author": "",
+  "type":"module",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/cjlaw/sbfbot/issues"
@@ -22,8 +23,8 @@
   "homepage": "https://github.com/cjlaw/sbfbot#readme",
   "dependencies": {
     "discord.js": "^14.7.1",
-    "dotenv": "^16.4.5",
-    "undici": "^6.19.2"
+    "dotenv": "^16.0.3",
+    "undici": "^5.28.4"
   },
   "devDependencies": {
     "chai": "^5.1.1",
