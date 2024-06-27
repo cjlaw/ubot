@@ -36,7 +36,7 @@ const ArnieQuotes = [
 const ArnieEmojiId = "894993017784643624";
 const ArnieEmoji = `<:sbfvgsArnie:${ArnieEmojiId}>`;
 
-class ArnieHelper {
+export class ArnieHelper {
   static handleArnieMention(message) {
     if (
       (message.content.match(/Arnie/i) || message.content.match(/Arnold/i)) &&
@@ -48,5 +48,3 @@ class ArnieHelper {
     }
   }
 }
-
-module.exports = ArnieHelper;

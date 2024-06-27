@@ -1,5 +1,5 @@
-const { expect } = require("chai");
-const JokeCommand = require("../commands/joke");
+import { expect } from "chai";
+import { execute } from "../commands/joke.js";
 
 describe("#command: joke", () => {
   it("should return a joke", async () => {
@@ -10,7 +10,7 @@ describe("#command: joke", () => {
         },
         mockReply: "",
       };
-      await JokeCommand.execute(mockInteraction);
+      await execute(mockInteraction);
       expect(mockInteraction).to.not.be.undefined;
       expect(mockInteraction).to.not.be.empty;
     } catch (error) {

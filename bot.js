@@ -1,13 +1,15 @@
-require("dotenv").config();
-const fs = require("node:fs");
-const path = require("node:path");
-const {
+import "dotenv/config.js";
+import path from "path";
+import { fileURLToPath } from "url";
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
+import {
   Client,
   Collection,
   Events,
   GatewayIntentBits,
   Partials,
-} = require("discord.js");
+} from "discord.js";
 const token = process.env.bot_token;
 const client = new Client({
   intents: [
@@ -18,18 +20,21 @@ const client = new Client({
   ],
   partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
-const ReactionHelper = require("./helpers/reaction_helper");
-const ArnieHelper = require("./helpers/arnie_helper");
+import { ReactionHelper } from "./helpers/reaction_helper.js";
+import { ArnieHelper } from "./helpers/arnie_helper.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 client.commands = new Collection();
-const commandsPath = path.join(__dirname, "commands");
-const commandFiles = fs
-  .readdirSync(commandsPath)
-  .filter((file) => file.endsWith(".js"));
+const commandsPath = join(__dirname, "commands");
+const commandFiles = readdirSync(commandsPath).filter((file) =>
+  file.endsWith(".js")
+);
 
 for (const file of commandFiles) {
-  const filePath = path.join(commandsPath, file);
-  const command = require(filePath);
+  const filePath = join(commandsPath, file);
+  const command = await import(filePath);
   client.commands.set(command.data.name, command);
 }
 

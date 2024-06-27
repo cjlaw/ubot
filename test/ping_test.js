@@ -1,5 +1,5 @@
-const { expect } = require("chai");
-const PingCommand = require("../commands/ping");
+import { expect } from "chai";
+import { execute } from "../commands/ping.js";
 
 describe("#command: ping", () => {
   let mockReply = "";
@@ -10,7 +10,7 @@ describe("#command: ping", () => {
   };
   it('should return "Pong!"', async () => {
     try {
-      await PingCommand.execute(mockInteraction);
+      await execute(mockInteraction);
     } catch (error) {
       console.error(error);
     }

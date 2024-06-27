@@ -1,5 +1,5 @@
-const { expect } = require("chai");
-const ReactionHelper = require("../helpers/reaction_helper");
+import { expect } from "chai";
+import { ReactionHelper } from "../helpers/reaction_helper.js";
 
 let reaction = {
   message: {

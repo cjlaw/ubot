@@ -1,6 +1,6 @@
-const { expect } = require("chai");
-const { request } = require("undici");
-const XkcdCommand = require("../commands/xkcd");
+import { expect } from "chai";
+import { request } from "undici";
+import { execute } from "../commands/xkcd.js";
 let latestComic = 1941;
 
 describe("#command: xkcd", () => {
@@ -24,7 +24,7 @@ describe("#command: xkcd", () => {
         },
       };
       try {
-        await XkcdCommand.execute(mockInteraction);
+        await execute(mockInteraction);
       } catch (error) {
         console.error(error);
       }
@@ -50,7 +50,7 @@ describe("#command: xkcd", () => {
         },
       };
       try {
-        await XkcdCommand.execute(mockInteraction);
+        await execute(mockInteraction);
       } catch (error) {
         console.error(error);
       }
@@ -78,7 +78,7 @@ describe("#command: xkcd", () => {
         },
       };
       try {
-        await XkcdCommand.execute(mockInteraction);
+        await execute(mockInteraction);
       } catch (error) {
         console.error(error);
       }

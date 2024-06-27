@@ -1,5 +1,5 @@
-const { expect } = require("chai");
-const ArnieHelper = require("../helpers/arnie_helper");
+import { expect } from "chai";
+import { ArnieHelper } from "../helpers/arnie_helper.js";
 
 const arnoldEmojiId = "894993017784643624";
 const arnoldEmoji = `<:sbfvgsArnie:${arnoldEmojiId}>`;
