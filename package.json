@@ -22,7 +22,7 @@
   "homepage": "https://github.com/cjlaw/sbfbot#readme",
   "dependencies": {
     "discord.js": "^14.7.1",
-    "dotenv": "^16.0.3",
+    "dotenv": "^16.4.5",
     "undici": "^6.19.2"
   },
   "devDependencies": {
