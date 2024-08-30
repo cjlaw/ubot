@@ -22,6 +22,7 @@ const client = new Client({
 });
 import { ReactionHelper } from "./helpers/reaction_helper.js";
 import { ArnieHelper } from "./helpers/arnie_helper.js";
+import { FacepalmHelper } from "./helpers/facepalm_helper.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -98,6 +99,11 @@ client.on(Events.MessageCreate, async (message) => {
 
   let arnieMessage = ArnieHelper.handleArnieMention(message);
   if (arnieMessage) message.channel.send(arnieMessage);
+
+  let facepalmMessage = FacepalmHelper.handleFacepalmMention(message);
+  if (facepalmMessage) {
+    message.channel.send(facepalmMessage);
+  }
 });
 
 client.login(token);
