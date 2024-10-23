@@ -100,10 +100,12 @@ client.on(Events.MessageCreate, async (message) => {
   let arnieMessage = ArnieHelper.handleArnieMention(message);
   if (arnieMessage) message.channel.send(arnieMessage);
 
+  /*
   let facepalmMessage = FacepalmHelper.handleFacepalmMention(message);
   if (facepalmMessage) {
     message.channel.send(facepalmMessage);
   }
+  */
 });
 
 client.login(token);
