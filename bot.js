@@ -94,18 +94,20 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
   }
 });
 
+const facepalmEnabled = process.env.facepalmEnabled;
+
 client.on(Events.MessageCreate, async (message) => {
   if (!message.content) return;
 
   let arnieMessage = ArnieHelper.handleArnieMention(message);
   if (arnieMessage) message.channel.send(arnieMessage);
 
-  /*
-  let facepalmMessage = FacepalmHelper.handleFacepalmMention(message);
-  if (facepalmMessage) {
-    message.channel.send(facepalmMessage);
+  if (facepalmEnabled == "true") {
+    let facepalmMessage = FacepalmHelper.handleFacepalmMention(message);
+    if (facepalmMessage) {
+      message.channel.send(facepalmMessage);
+    }
   }
-  */
 });
 
 client.login(token);
