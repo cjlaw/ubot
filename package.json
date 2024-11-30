@@ -24,11 +24,11 @@
   "dependencies": {
     "discord.js": "^14.16.3",
     "dotenv": "^16.0.3",
-    "undici": "^6.19.8"
+    "undici": "^7.0.0"
   },
   "devDependencies": {
     "chai": "^5.1.1",
-    "eslint": "^9.9.1",
+    "eslint": "^9.15.0",
     "mocha": "^10.7.3"
   }
 }
