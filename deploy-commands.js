@@ -1,10 +1,13 @@
+import "dotenv/config.js";
 import { REST, Routes } from "discord.js";
-require("dotenv").config();
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
+
+const __dirname = import.meta.dirname;
+
 const token = process.env.bot_token;
 const clientId = process.env.clientId;
 const guildId = process.env.guildId;
-import { readdirSync } from "node:fs";
-import { join } from "node:path";
 
 const commands = [];
 // Grab all the command files from the commands directory you created earlier
@@ -15,7 +18,7 @@ const commandFiles = readdirSync(commandsPath).filter((file) =>
 
 // Grab the SlashCommandBuilder#toJSON() output of each command's data for deployment
 for (const file of commandFiles) {
-  const command = require(`./commands/${file}`);
+  const command = await import(join(commandsPath, file));
   commands.push(command.data.toJSON());
 }
 
