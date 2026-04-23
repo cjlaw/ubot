@@ -1,0 +1,21 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | { read -r f; echo \"$f\" | grep -q 'bot\\.js$' && ~/.nvm/versions/node/v22.22.2/bin/node --check \"$f\"; } 2>/dev/null || true",
+            "statusMessage": "Checking bot.js syntax..."
+          },
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | { read -r f; echo \"$f\" | grep -qE '\\.js$' && ~/.nvm/versions/node/v22.22.2/bin/node /Users/casey/dev/repos/ubot/node_modules/.bin/mocha; } 2>/dev/null || true",
+            "statusMessage": "Running tests..."
+          }
+        ]
+      }
+    ]
+  }
+}
