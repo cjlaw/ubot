@@ -1,5 +1,4 @@
 import { expect } from "chai";
-import { request } from "undici";
 import { execute } from "../commands/xkcd.js";
 
 let latestComic = 1941;
@@ -16,8 +15,7 @@ const mockInteraction = (selection) => {
 
 describe("#command: xkcd", () => {
   before("get number of latest XKCD comic", async () => {
-    const infoResult = await request("https://xkcd.com/info.0.json");
-    const info = await infoResult.body.json();
+    const info = await fetch("https://xkcd.com/info.0.json").then((r) => r.json());
     latestComic = info.num;
   });
 

@@ -1,5 +1,4 @@
 import { SlashCommandBuilder } from "discord.js";
-import { request } from "undici";
 
 const getRandomIntInclusive = (min, max) => {
   min = Math.ceil(min);
@@ -21,8 +20,7 @@ export const data = new SlashCommandBuilder()
 export async function execute(interaction) {
   await interaction.deferReply();
   try {
-    const infoResult = await request("https://xkcd.com/info.0.json");
-    const info = await infoResult.body.json();
+    const info = await fetch("https://xkcd.com/info.0.json").then((r) => r.json());
 
     const requestedComic = interaction.options.getString("selection");
     let comicNumber;
@@ -30,10 +28,7 @@ export async function execute(interaction) {
     else if (parseInt(requestedComic, 10)) comicNumber = parseInt(requestedComic, 10);
     else comicNumber = getRandomIntInclusive(1, info.num);
 
-    const comicResult = await request(
-      `https://xkcd.com/${comicNumber}/info.0.json`
-    );
-    const comicInfo = await comicResult.body.json();
+    const comicInfo = await fetch(`https://xkcd.com/${comicNumber}/info.0.json`).then((r) => r.json());
     const replyContent = `#${comicInfo.num} \n${comicInfo.title}\n${comicInfo.img}\n${comicInfo.alt}`;
 
     await interaction.editReply(replyContent);
