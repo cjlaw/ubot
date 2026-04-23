@@ -11,6 +11,8 @@ pm2 restart ubot
 pm2 logs ubot
 ```
 
+Requires Node.js >=22. The `libatomic1` system library must also be present (`sudo apt-get install libatomic1` on Debian/Ubuntu). After deploying, run `npm install` before restarting.
+
 ## Commands
 
 ```bash
