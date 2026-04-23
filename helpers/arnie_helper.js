@@ -13,9 +13,9 @@ const ArnieQuotes = [
   "What killed the dinosaurs?... THE ICE AGE!",
   "If revenge is a dish best served cold, then put on your Sunday finest. It`s time to feast!",
   "I need a vacation",
-  "But I’m all woman",
+  "But I'm all woman",
   "You`ve just been ERASED",
-  "YOU’RE A QUOIREBOY COMPARED TO ME! A HUGGING QUOIREBOY!",
+  "YOU'RE A QUOIREBOY COMPARED TO ME! A HUGGING QUOIREBOY!",
   "YOU SHOULD HAVE CLONED YOURSELF! – (WHY`S THAT?) – SO YOU CAN GO HUG YOURSELF!",
   "RUBBER-BABY-BUGGY-BUMPERS",
   "DO IT. DO IT NOW!",
@@ -33,18 +33,13 @@ const ArnieQuotes = [
   "Of course, I`m a terminator",
   "Get your butt to Mars!",
 ];
-const ArnieEmojiId = "894993017784643624";
-const ArnieEmoji = `<:sbfvgsArnie:${ArnieEmojiId}>`;
 
-export class ArnieHelper {
-  static handleArnieMention(message) {
-    if (
-      (message.content.match(/Arnie/i) || message.content.match(/Arnold/i)) &&
-      !message.content.includes(ArnieEmojiId)
-    ) {
-      return `${
-        ArnieQuotes[Math.floor(Math.random() * ArnieQuotes.length)]
-      } ${ArnieEmoji}`;
-    }
+export function handleArnieMention(message, arnieEmoji) {
+  if (
+    (message.content.match(/Arnie/i) || message.content.match(/Arnold/i)) &&
+    !(arnieEmoji && message.content.includes(arnieEmoji.id))
+  ) {
+    const quote = ArnieQuotes[Math.floor(Math.random() * ArnieQuotes.length)];
+    return arnieEmoji ? `${quote} ${arnieEmoji}` : quote;
   }
 }
