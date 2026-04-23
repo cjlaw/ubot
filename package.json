@@ -15,7 +15,10 @@
     "url": "git+https://github.com/cjlaw/sbfbot.git"
   },
   "author": "",
-  "type":"module",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/cjlaw/sbfbot/issues"
