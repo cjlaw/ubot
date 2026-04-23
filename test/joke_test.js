@@ -1,20 +1,20 @@
 import { expect } from "chai";
 import { execute } from "../commands/joke.js";
 
+const mockInteraction = () => {
+  let reply = "";
+  return {
+    deferReply: async () => {},
+    editReply: (content) => { reply = content; },
+    getReply: () => reply,
+  };
+};
+
 describe("#command: joke", () => {
   it("should return a joke", async () => {
-    try {
-      let mockInteraction = {
-        reply: (content) => {
-          mockReply = content;
-        },
-        mockReply: "",
-      };
-      await execute(mockInteraction);
-      expect(mockInteraction).to.not.be.undefined;
-      expect(mockInteraction).to.not.be.empty;
-    } catch (error) {
-      console.error(error);
-    }
+    const interaction = mockInteraction();
+    await execute(interaction);
+    expect(interaction.getReply()).to.be.a("string");
+    expect(interaction.getReply()).to.not.be.empty;
   });
 });

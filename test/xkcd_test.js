@@ -1,93 +1,66 @@
 import { expect } from "chai";
 import { request } from "undici";
 import { execute } from "../commands/xkcd.js";
+
 let latestComic = 1941;
+
+const mockInteraction = (selection) => {
+  let reply = "";
+  return {
+    deferReply: async () => {},
+    editReply: (content) => { reply = content; },
+    getReply: () => reply,
+    options: { getString: () => selection },
+  };
+};
 
 describe("#command: xkcd", () => {
   before("get number of latest XKCD comic", async () => {
-    let infoResult = await request("https://xkcd.com/info.0.json");
-    let info = await infoResult.body.json();
+    const infoResult = await request("https://xkcd.com/info.0.json");
+    const info = await infoResult.body.json();
     latestComic = info.num;
   });
 
   describe("-when getting a random comic", async () => {
     it("should return a valid comic", async () => {
-      let mockReply = "";
-      let mockInteraction = {
-        reply: (content) => {
-          mockReply = content;
-        },
-        options: {
-          getString: (name) => {
-            return "random";
-          },
-        },
-      };
-      try {
-        await execute(mockInteraction);
-      } catch (error) {
-        console.error(error);
-      }
-      expect(mockReply).to.not.be.undefined;
-      expect(mockReply.indexOf("#")).to.not.equal(-1);
-
-      let comicNumber = mockReply.substring(1, mockReply.indexOf(" "));
-      expect(comicNumber > 1 && comicNumber <= latestComic).to.equal(true);
+      const interaction = mockInteraction("random");
+      await execute(interaction);
+      const reply = interaction.getReply();
+      expect(reply.indexOf("#")).to.not.equal(-1);
+      const comicNumber = parseInt(reply.substring(1, reply.indexOf(" ")));
+      expect(comicNumber >= 1 && comicNumber <= latestComic).to.equal(true);
     });
   });
 
   describe("-when getting the latest comic", () => {
     it("should return a valid comic", async () => {
-      let mockReply = "";
-      let mockInteraction = {
-        reply: (content) => {
-          mockReply = content;
-        },
-        options: {
-          getString: (name) => {
-            return "latest";
-          },
-        },
-      };
-      try {
-        await execute(mockInteraction);
-      } catch (error) {
-        console.error(error);
-      }
-      expect(mockReply).to.not.be.undefined;
-      expect(mockReply.indexOf("#")).to.not.equal(-1);
-
-      let comicNumber = parseInt(
-        mockReply.substring(1, mockReply.indexOf(" "))
-      );
+      const interaction = mockInteraction("latest");
+      await execute(interaction);
+      const reply = interaction.getReply();
+      expect(reply.indexOf("#")).to.not.equal(-1);
+      const comicNumber = parseInt(reply.substring(1, reply.indexOf(" ")));
       expect(comicNumber).to.equal(latestComic);
+    });
+  });
+
+  describe("-when given invalid input", () => {
+    it("should return a random comic", async () => {
+      const interaction = mockInteraction("abc");
+      await execute(interaction);
+      const reply = interaction.getReply();
+      expect(reply.indexOf("#")).to.not.equal(-1);
+      const comicNumber = parseInt(reply.substring(1, reply.indexOf(" ")));
+      expect(comicNumber >= 1 && comicNumber <= latestComic).to.equal(true);
     });
   });
 
   describe("-when getting comic #221", () => {
     it("should return a valid comic", async () => {
-      let mockReply = "";
-      let mockInteraction = {
-        reply: (content) => {
-          mockReply = content;
-        },
-        options: {
-          getString: (name) => {
-            return "221";
-          },
-        },
-      };
-      try {
-        await execute(mockInteraction);
-      } catch (error) {
-        console.error(error);
-      }
-      expect(mockReply).to.not.be.undefined;
-      expect(mockReply.indexOf("#")).to.not.equal(-1);
-
-      let comicNumber = parseInt(
-        mockReply.substring(1, mockReply.indexOf(" "))
-      );
+      const interaction = mockInteraction("221");
+      await execute(interaction);
+      const reply = interaction.getReply();
+      expect(reply.indexOf("#")).to.not.equal(-1);
+      const comicNumber = parseInt(reply.substring(1, reply.indexOf(" ")));
       expect(comicNumber).to.equal(221);
     });
   });

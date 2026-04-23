@@ -1,6 +1,4 @@
 import "dotenv/config.js";
-import path from "path";
-import { fileURLToPath } from "url";
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -10,7 +8,18 @@ import {
   GatewayIntentBits,
   Partials,
 } from "discord.js";
+import { handleUpvoteReaction, handleTwssReaction } from "./helpers/reaction_helper.js";
+import { handleArnieMention } from "./helpers/arnie_helper.js";
+import { handleFacepalmMention } from "./helpers/facepalm_helper.js";
+
 const token = process.env.bot_token;
+const facepalmEnabled = process.env.facepalmEnabled === "true";
+
+if (!token) {
+  console.error("Error: bot_token is not set in environment variables.");
+  process.exit(1);
+}
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -20,12 +29,8 @@ const client = new Client({
   ],
   partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
-import { ReactionHelper } from "./helpers/reaction_helper.js";
-import { ArnieHelper } from "./helpers/arnie_helper.js";
-import { FacepalmHelper } from "./helpers/facepalm_helper.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = import.meta.dirname;
 
 client.commands = new Collection();
 const commandsPath = join(__dirname, "commands");
@@ -39,7 +44,10 @@ for (const file of commandFiles) {
   client.commands.set(command.data.name, command);
 }
 
+let arnieEmoji;
 client.once(Events.ClientReady, () => {
+  arnieEmoji = client.emojis.cache.find((e) => e.name === "sbfvgsArnie");
+  if (!arnieEmoji) console.warn("Warning: sbfvgsArnie emoji not found — Arnie responses will not include the emoji");
   console.log("ubot is ready!");
 });
 
@@ -69,44 +77,33 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 client.on(Events.MessageReactionAdd, async (reaction, user) => {
-  // When a reaction is received, check if the structure is partial
   if (reaction.partial) {
-    // If the message this reaction belongs to was removed, the fetching might result in an API error which should be handled
     try {
       await reaction.fetch();
     } catch (error) {
       console.error("Something went wrong when fetching the message:", error);
-      // Return as `reaction.message.author` may be undefined/null
       return;
     }
   }
 
   if (reaction.emoji.name === "upvote") {
-    reaction.message.channel.send(
-      ReactionHelper.handleUpvoteReaction(reaction, user)
-    );
+    reaction.message.channel.send(handleUpvoteReaction(reaction, user));
   }
 
   if (reaction.emoji.name === "twss") {
-    reaction.message.channel.send(
-      ReactionHelper.handleTwssReaction(reaction, user)
-    );
+    reaction.message.channel.send(handleTwssReaction(reaction, user));
   }
 });
 
-const facepalmEnabled = process.env.facepalmEnabled;
-
 client.on(Events.MessageCreate, async (message) => {
-  if (!message.content) return;
+  if (!message.content || message.author.bot) return;
 
-  let arnieMessage = ArnieHelper.handleArnieMention(message);
+  const arnieMessage = handleArnieMention(message, arnieEmoji);
   if (arnieMessage) message.channel.send(arnieMessage);
 
-  if (facepalmEnabled == "true") {
-    let facepalmMessage = FacepalmHelper.handleFacepalmMention(message);
-    if (facepalmMessage) {
-      message.channel.send(facepalmMessage);
-    }
+  if (facepalmEnabled) {
+    const facepalmMessage = handleFacepalmMention(message);
+    if (facepalmMessage) message.channel.send(facepalmMessage);
   }
 });
 
