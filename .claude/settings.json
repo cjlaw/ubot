@@ -1,4 +1,17 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(npm test*)",
+      "Bash(npm install*)",
+      "Bash(npm run*)",
+      "Bash(node *)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git status*)",
+      "Bash(git add*)",
+      "Bash(git commit*)"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {
