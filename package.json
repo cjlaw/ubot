@@ -26,7 +26,7 @@
   "homepage": "https://github.com/cjlaw/sbfbot#readme",
   "dependencies": {
     "discord.js": "^14.26.3",
-    "dotenv": "^16.0.3"
+    "dotenv": "^17.4.2"
   },
   "devDependencies": {
     "chai": "^5.1.1",
