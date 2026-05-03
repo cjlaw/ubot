@@ -11,6 +11,7 @@ import {
 import { handleUpvoteReaction, handleTwssReaction } from "./helpers/reaction_helper.js";
 import { handleArnieMention } from "./helpers/arnie_helper.js";
 import { handleFacepalmMention } from "./helpers/facepalm_helper.js";
+import { getEpisodes } from "./helpers/episode_helper.js";
 
 const token = process.env.bot_token;
 const facepalmEnabled = process.env.facepalmEnabled === "true";
@@ -48,6 +49,8 @@ let arnieEmoji;
 client.once(Events.ClientReady, () => {
   arnieEmoji = client.emojis.cache.find((e) => e.name === "sbfvgsArnie");
   if (!arnieEmoji) console.warn("Warning: sbfvgsArnie emoji not found — Arnie responses will not include the emoji");
+  if (!process.env.ANTHROPIC_API_KEY) console.warn("Warning: ANTHROPIC_API_KEY is not set — /findepisode will use fuzzy fallback only");
+  getEpisodes().catch(err => console.error("Failed to warm episode cache:", err.message));
   console.log("ubot is ready!");
 });
 
