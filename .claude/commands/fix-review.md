@@ -1,20 +1,23 @@
-Read `.ai/reviews/current.md` and address the findings.
+Read `.ai/reviews/current.md` and create a fix plan.
 
 Rules:
 
-- Fix all Critical and High issues first
-- Do not introduce unrelated changes
-- Do not refactor unless required to fix an issue
-- Add or update tests for any behavioral change
+- Do not make any code changes
 - Follow AGENTS.md and project conventions
-- If a finding is invalid, explain why before skipping it
 
-Process:
+Plan format — for each finding, ordered by severity (Critical → High → Medium → Low):
 
-- Work through issues in order of severity
-- Keep changes minimal and focused
+- **Finding**: Brief restatement
+- **Action**: Fix | Skip (with reason) | Clarify (with question)
+- **Approach**: Specific change to make (file, function, strategy)
+- **Tests**: What test coverage is needed, if any
+- **Dependencies**: Note if this fix must follow or precedes another
 
-After fixing:
+After listing all findings, output a **Summary**:
 
-- Run relevant checks (tests, lint, typecheck)
-- Stop when all actionable issues are resolved
+- Total: X Critical, X High, X Medium, X Low
+- Actionable: X fixes, X skips
+- Estimated scope: (e.g., "3 small isolated changes, 1 moderate refactor required by finding #2")
+- Suggested fix order if dependencies exist
+
+Do not begin fixing. Wait for explicit approval or instruction to proceed.
