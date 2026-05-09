@@ -14,14 +14,21 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
+      deploy: ${{ steps.filter.outputs.deploy }}
       commands: ${{ steps.filter.outputs.commands }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          fetch-depth: 2
+          fetch-depth: 0
       - id: filter
         run: |
-          if git diff --name-only HEAD~1 HEAD | grep -q '^commands/'; then
+          CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+          if echo "$CHANGED" | grep -qE '^(bot\.js|deploy-commands\.js|Dockerfile|\.dockerignore|docker-compose\.yml|package(-lock)?\.json|commands/|helpers/)'; then
+            echo "deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "deploy=false" >> $GITHUB_OUTPUT
+          fi
+          if echo "$CHANGED" | grep -q '^commands/'; then
             echo "commands=true" >> $GITHUB_OUTPUT
           else
             echo "commands=false" >> $GITHUB_OUTPUT
@@ -39,7 +46,8 @@ jobs:
       - run: npm test
 
   build-push:
-    needs: test
+    needs: [test, changes]
+    if: needs.changes.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
