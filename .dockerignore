@@ -1,0 +1,8 @@
+node_modules/
+.env
+test/
+.git/
+.github/
+.ai/
+HANDOFF.md
+.claude/
