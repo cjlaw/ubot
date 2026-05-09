@@ -9,15 +9,18 @@
 - Run one test file: `npm test -- test/name_test.js`
 - Lint: `npx eslint .`
 - Typecheck: no TypeScript/typecheck command is configured.
-- Production process: `pm2 start bot.js --name ubot`, `pm2 restart ubot`, `pm2 logs ubot`
-- Requires `libatomic1` system library on the VM (`sudo apt-get install libatomic1`). Run `npm install` after pulling before restarting pm2.
+- Deploys are automatic on push to `main` (test → build image → push to GHCR → deploy via GitHub Actions)
+- Manual redeploy on VM: `cd ~/ubot && docker compose pull && docker compose up -d`
+- Container logs: `docker compose logs -f` (run from `~/ubot/` on the VM)
+- Slash command registration runs automatically when `commands/` changes; trigger manually via `workflow_dispatch` on `register-commands.yml`
+- Rollback: edit `docker-compose.yml` to pin `image:` to a previous `sha-<commit>` tag, then `docker compose up -d`
 
 ## Working Rules
 
 - Use Node.js `>=22`; this project is ESM (`"type": "module"`).
 - Keep runtime entry behavior in `bot.js`: it dynamically imports every `.js` file in `commands/` and stores commands by `command.data.name`.
 - Add or update tests in `test/` when changing command or helper behavior.
-- After adding, removing, renaming, or changing slash command definitions, run `npm run dep-cmd` to register commands with the Discord guild from `.env`.
+- After adding, removing, renaming, or changing slash command definitions: locally run `npm run dep-cmd`; in production, pushing to `main` triggers the `register` job in `deploy.yml` automatically when `commands/` changed.
 - Slash commands must export `data` as a Discord `SlashCommandBuilder` and `execute(interaction)` as the command handler.
 - Commands that do async work should call `interaction.deferReply()` before the work and finish with `interaction.editReply()` to avoid Discord's interaction timeout.
 - Keep `deploy-commands.js` separate from `bot.js`; it exists only to register slash commands with Discord's API.
