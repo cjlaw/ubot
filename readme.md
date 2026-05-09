@@ -10,6 +10,7 @@
     clientId=
     guildId=
     facepalmEnabled=   # optional, set to "true" to enable facepalm responses
+    ANTHROPIC_API_KEY= # optional, required for smart episode matching in /findepisode
     ```
 4. npm run dep-cmd
 5. node bot.js
