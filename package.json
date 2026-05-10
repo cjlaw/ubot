@@ -9,7 +9,8 @@
   "scripts": {
     "test": "mocha",
     "build": "tsc",
-    "dep-cmd": "node dist/deploy-commands.js"
+    "dep-cmd": "node dist/deploy-commands.js",
+    "typecheck:test": "tsc -p tsconfig.test.json"
   },
   "repository": {
     "type": "git",
@@ -33,7 +34,9 @@
     "fast-xml-parser": "^5.7.2"
   },
   "devDependencies": {
-    "@types/node": "^25.6.2",
+    "@types/chai": "^5.2.3",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.0.0",
     "chai": "^6.2.2",
     "eslint": "^10.2.1",
     "mocha": "^11.7.5",
