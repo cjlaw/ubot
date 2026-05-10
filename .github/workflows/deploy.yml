@@ -95,6 +95,7 @@ jobs:
             docker compose up -d
             sleep 5
             docker compose ps --status running --quiet | grep -q . || { docker compose logs; exit 1; }
+            docker image prune -a -f
 
   register:
     needs: [deploy, changes]
@@ -109,3 +110,17 @@ jobs:
           script: |
             cd ~/ubot
             docker compose run --rm ubot node dist/deploy-commands.js
+
+  release:
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          TAG="v$(date -u +%Y.%m.%d)-${RUN_NUMBER}"
+          gh release create "$TAG" --title "$TAG" --generate-notes --repo cjlaw/ubot --target ${{ github.sha }}
