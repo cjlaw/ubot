@@ -8,10 +8,12 @@ import {
   GatewayIntentBits,
   Partials,
 } from "discord.js";
+import type { MessageReaction, User } from "discord.js";
 import { handleUpvoteReaction, handleTwssReaction } from "./helpers/reaction_helper.js";
 import { handleArnieMention } from "./helpers/arnie_helper.js";
 import { handleFacepalmMention } from "./helpers/facepalm_helper.js";
 import { getEpisodes } from "./helpers/episode_helper.js";
+import type { Command } from "./types.js";
 
 const token = process.env.bot_token;
 const facepalmEnabled = process.env.facepalmEnabled === "true";
@@ -21,7 +23,11 @@ if (!token) {
   process.exit(1);
 }
 
-const client = new Client({
+class UbotClient extends Client {
+  commands = new Collection<string, Command>();
+}
+
+const client = new UbotClient({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
@@ -33,7 +39,6 @@ const client = new Client({
 
 const __dirname = import.meta.dirname;
 
-client.commands = new Collection();
 const commandsPath = join(__dirname, "commands");
 const commandFiles = readdirSync(commandsPath).filter((file) =>
   file.endsWith(".js")
@@ -41,16 +46,16 @@ const commandFiles = readdirSync(commandsPath).filter((file) =>
 
 for (const file of commandFiles) {
   const filePath = join(commandsPath, file);
-  const command = await import(filePath);
+  const command = await import(filePath) as Command;
   client.commands.set(command.data.name, command);
 }
 
-let arnieEmoji;
+let arnieEmoji: ReturnType<typeof client.emojis.cache.find>;
 client.once(Events.ClientReady, () => {
   arnieEmoji = client.emojis.cache.find((e) => e.name === "sbfvgsArnie");
   if (!arnieEmoji) console.warn("Warning: sbfvgsArnie emoji not found — Arnie responses will not include the emoji");
   if (!process.env.ANTHROPIC_API_KEY) console.warn("Warning: ANTHROPIC_API_KEY is not set — /findepisode will use fuzzy fallback only");
-  getEpisodes().catch(err => console.error("Failed to warm episode cache:", err.message));
+  getEpisodes().catch(err => console.error("Failed to warm episode cache:", (err as Error).message));
   console.log("ubot is ready!");
 });
 
@@ -89,12 +94,14 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
     }
   }
 
-  if (reaction.emoji.name === "upvote") {
-    reaction.message.channel.send(handleUpvoteReaction(reaction, user));
-  }
+  if ("send" in reaction.message.channel) {
+    if (reaction.emoji.name === "upvote") {
+      reaction.message.channel.send(handleUpvoteReaction(reaction as MessageReaction, user as User));
+    }
 
-  if (reaction.emoji.name === "twss") {
-    reaction.message.channel.send(handleTwssReaction(reaction, user));
+    if (reaction.emoji.name === "twss") {
+      reaction.message.channel.send(handleTwssReaction(reaction as MessageReaction, user as User));
+    }
   }
 });
 
