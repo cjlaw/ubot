@@ -1,4 +1,5 @@
 import { SlashCommandBuilder, MessageFlags } from "discord.js";
+import type { ChatInputCommandInteraction } from "discord.js";
 import * as chrono from "chrono-node";
 import { formats, getOffsetMinutes } from "../helpers/timestamp_helper.js";
 
@@ -30,17 +31,18 @@ export const data = new SlashCommandBuilder()
       )
   );
 
-export async function execute(interaction) {
+export async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  const input = interaction.options.getString("input");
-  const timezone = interaction.options.getString("timezone");
+  const input = interaction.options.getString("input", true);
+  const timezone = interaction.options.getString("timezone", true);
 
   const now = new Date();
   const roughParsed = chrono.parseDate(input, now);
 
   if (!roughParsed) {
-    return interaction.editReply("Couldn't understand that date. Try something like \"tomorrow at 5pm\", \"in 5 hours\", or \"4/24 5pm\".");
+    await interaction.editReply("Couldn't understand that date. Try something like \"tomorrow at 5pm\", \"in 5 hours\", or \"4/24 5pm\".");
+    return;
   }
 
   const offsetMinutes = getOffsetMinutes(timezone, roughParsed);
