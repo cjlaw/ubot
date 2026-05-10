@@ -5,7 +5,7 @@
 - Install dependencies: `npm install`
 - Build: `npm run build` (compiles TypeScript to `dist/`)
 - Run locally (quick): `npm run build && node dist/bot.js`
-- Run locally (prod-faithful): `podman build -t ubot:local . && podman run --rm --env-file .env ubot:local`
+- Run locally (prod-faithful): `podman build -t ubot:local . && podman run --rm -it --env-file .env ubot:local`
 - Register Discord slash commands: `npm run build && npm run dep-cmd`
 - Run all tests: `npm test`
 - Run one test file: `npm test -- test/name_test.js`
@@ -41,6 +41,11 @@
 - Prefer `const`; avoid `var`.
 - Use named exports for helper functions.
 - Keep helper logic testable without Discord network calls where practical.
+
+## Files Not in Git
+
+- `RUNBOOK.md` — local operational reference only; never commit it.
+- `.env` — local secrets; never commit it.
 
 ## Project Structure Hints
 
