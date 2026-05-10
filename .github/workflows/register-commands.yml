@@ -14,4 +14,4 @@ jobs:
           key: ${{ secrets.VM_SSH_KEY }}
           script: |
             cd ~/ubot
-            docker compose run --rm ubot node deploy-commands.js
+            docker compose run --rm ubot node dist/deploy-commands.js

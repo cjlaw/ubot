@@ -1,3 +1,5 @@
+import type { Message, GuildEmoji } from "discord.js";
+
 const ArnieQuotes = [
   "GET TO THE CHOPPA!",
   "Your clothes, give them to me, NOW!",
@@ -34,7 +36,7 @@ const ArnieQuotes = [
   "Get your butt to Mars!",
 ];
 
-export function handleArnieMention(message, arnieEmoji) {
+export function handleArnieMention(message: Message, arnieEmoji: GuildEmoji | undefined): string | undefined {
   if (
     (message.content.match(/Arnie/i) || message.content.match(/Arnold/i)) &&
     !(arnieEmoji && message.content.includes(arnieEmoji.id))

@@ -1,20 +1,22 @@
 import { XMLParser } from "fast-xml-parser";
 import Anthropic from "@anthropic-ai/sdk";
+import type { ToolUseBlock } from "@anthropic-ai/sdk/resources/messages.js";
+import type { Episode, EpisodeResult, SearchResult } from "../types.js";
 
 const FEED_URL = "https://feeds.megaphone.fm/ADL8067347777";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const FUZZY_TOP_N = 8;
 const MIN_QUERY_LENGTH = 3;
 
-let cache = null;
-let anthropic = null;
+let cache: { episodes: Episode[]; fetchedAt: number } | null = null;
+let anthropic: Anthropic | null = null;
 
 // Test seams — not for production use.
-let _fetchFn = (...args) => fetch(...args);
-export function _setAnthropicClient(client) { anthropic = client; }
-export function _setFetch(fn) { _fetchFn = fn; }
+let _fetchFn: typeof fetch = (...args) => fetch(...args);
+export function _setAnthropicClient(client: Anthropic | null): void { anthropic = client; }
+export function _setFetch(fn: typeof fetch): void { _fetchFn = fn; }
 
-export async function getEpisodes() {
+export async function getEpisodes(): Promise<Episode[]> {
   const now = Date.now();
   if (cache && now - cache.fetchedAt < CACHE_TTL_MS) return cache.episodes;
   try {
@@ -23,29 +25,37 @@ export async function getEpisodes() {
     return episodes;
   } catch (err) {
     if (cache) {
-      console.warn("[episode-search] Feed refresh failed, using stale cache:", err.message);
+      console.warn("[episode-search] Feed refresh failed, using stale cache:", (err as Error).message);
       return cache.episodes;
     }
     throw err;
   }
 }
 
-export function clearCache() { cache = null; }
+export function clearCache(): void { cache = null; }
 
-async function fetchAndParse() {
+async function fetchAndParse(): Promise<Episode[]> {
   const res = await _fetchFn(FEED_URL, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error(`Feed fetch failed: ${res.status}`);
   return parseFeed(await res.text());
 }
 
-export function parseFeed(xml) {
+interface RawFeedItem {
+  enclosure?: { "@_url"?: string };
+  "itunes:episode"?: string | number;
+  title?: string;
+  description?: string;
+  pubDate?: string;
+}
+
+export function parseFeed(xml: string): Episode[] {
   const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_" });
   const parsed = parser.parse(xml);
   if (!parsed?.rss?.channel?.item) throw new Error("Invalid or empty RSS feed");
   const raw = parsed.rss.channel.item;
-  const items = Array.isArray(raw) ? raw : [raw];
-  return items.map(item => {
-    const audioUrl = item.enclosure?.["@_url"] ?? "";
+  const items = (Array.isArray(raw) ? raw : [raw]) as RawFeedItem[];
+  return items.map((item) => {
+    const audioUrl: string = item.enclosure?.["@_url"] ?? "";
     const adlMatch = audioUrl.match(/ADL\d+/);
     const playerUrl = adlMatch
       ? `https://playlist.megaphone.fm/?e=${adlMatch[0]}`
@@ -61,13 +71,13 @@ export function parseFeed(xml) {
   });
 }
 
-function stripHtml(s) {
+function stripHtml(s: string): string {
   return s.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
 }
 
 const STOP_WORDS = new Set(["the", "an", "is", "of", "for", "and", "to", "in", "on", "at", "by", "with", "that", "this", "was", "it", "be", "as", "or", "so", "where", "who", "what", "when", "how", "find", "episode", "someone", "worked"]);
 
-export function fuzzyFilter(episodes, query, n = FUZZY_TOP_N) {
+export function fuzzyFilter(episodes: Episode[], query: string, n = FUZZY_TOP_N): Episode[] {
   const terms = query.toLowerCase().split(/\W+/).filter(t => t.length >= 2 && !STOP_WORDS.has(t));
   if (terms.length === 0) return [];
   const scored = episodes.map(ep => {
@@ -82,7 +92,7 @@ export function fuzzyFilter(episodes, query, n = FUZZY_TOP_N) {
     .map(x => x.ep);
 }
 
-export async function llmPickTop3(query, candidates) {
+export async function llmPickTop3(query: string, candidates: Episode[]): Promise<EpisodeResult[]> {
   if (!anthropic) anthropic = new Anthropic({ timeout: 30000 });
 
   const candidateList = candidates.map((ep, i) => ({
@@ -120,14 +130,14 @@ export async function llmPickTop3(query, candidates) {
     }],
   });
 
-  const toolUse = response.content.find(b => b.type === "tool_use");
+  const toolUse = response.content.find((b): b is ToolUseBlock => b.type === "tool_use");
   if (!toolUse) return [];
-  const { indices } = toolUse.input;
+  const { indices } = toolUse.input as { indices: unknown };
   if (!Array.isArray(indices)) return [];
-  return [...new Set(indices)].slice(0, 3).map(i => candidates[i]).filter(Boolean).map(episode => ({ episode }));
+  return [...new Set(indices)].slice(0, 3).map((i: number) => candidates[i]).filter(Boolean).map(episode => ({ episode }));
 }
 
-export async function searchEpisodes(query, username) {
+export async function searchEpisodes(query: string, username: string | undefined): Promise<SearchResult | null> {
   if (!query || query.trim().length < MIN_QUERY_LENGTH) return null;
 
   const user = username ?? "unknown";
@@ -157,7 +167,7 @@ export async function searchEpisodes(query, username) {
     return null;
   } catch (err) {
     // Do not log the full err object — request config may contain auth headers.
-    console.error("[episode-search] LLM call failed, falling back:", err.message);
+    console.error("[episode-search] LLM call failed, falling back:", (err as Error).message);
     return { results: candidates.slice(0, 3).map(episode => ({ episode })), fallback: true };
   }
 }

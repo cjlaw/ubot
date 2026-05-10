@@ -6,3 +6,4 @@ test/
 .ai/
 HANDOFF.md
 .claude/
+dist/

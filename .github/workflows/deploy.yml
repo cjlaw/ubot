@@ -23,7 +23,7 @@ jobs:
       - id: filter
         run: |
           CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
-          if echo "$CHANGED" | grep -qE '^(bot\.js|deploy-commands\.js|Dockerfile|\.dockerignore|docker-compose\.yml|package(-lock)?\.json|commands/|helpers/)'; then
+          if echo "$CHANGED" | grep -qE '^(bot\.ts|deploy-commands\.ts|Dockerfile|\.dockerignore|docker-compose\.yml|package(-lock)?\.json|tsconfig\.json|commands/|helpers/)'; then
             echo "deploy=true" >> $GITHUB_OUTPUT
           else
             echo "deploy=false" >> $GITHUB_OUTPUT
@@ -43,6 +43,8 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx tsc -p tsconfig.test.json
       - run: npm test
 
   build-push:
@@ -106,4 +108,4 @@ jobs:
           key: ${{ secrets.VM_SSH_KEY }}
           script: |
             cd ~/ubot
-            docker compose run --rm ubot node deploy-commands.js
+            docker compose run --rm ubot node dist/deploy-commands.js

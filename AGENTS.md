@@ -3,12 +3,15 @@
 ## Commands
 
 - Install dependencies: `npm install`
-- Run locally: `node bot.js`
-- Register Discord slash commands: `npm run dep-cmd`
+- Build: `npm run build` (compiles TypeScript to `dist/`)
+- Run locally (quick): `npm run build && node dist/bot.js`
+- Run locally (prod-faithful): `podman build -t ubot:local . && podman run --rm -it --env-file .env ubot:local`
+- Register Discord slash commands: `npm run build && npm run dep-cmd`
 - Run all tests: `npm test`
 - Run one test file: `npm test -- test/name_test.js`
 - Lint: `npx eslint .`
-- Typecheck: no TypeScript/typecheck command is configured.
+- Typecheck source: `npx tsc --noEmit`
+- Typecheck tests: `npm run typecheck:test`
 - Deploys are automatic on push to `main` (test → build image → push to GHCR → deploy via GitHub Actions) **only when deployable files change** (see positive list in `deploy.yml`'s `changes` job). Pushes touching only docs, tests, or workflows skip build/deploy but still run tests.
 - **If you add a new top-level source file** (e.g. a new `utils.js` at the repo root), add it to the path filter regex in `.github/workflows/deploy.yml` → `changes` job → `filter` step, or it will never trigger a deploy.
 - Manual redeploy on VM: `cd ~/ubot && docker compose pull && docker compose up -d`
@@ -38,6 +41,11 @@
 - Prefer `const`; avoid `var`.
 - Use named exports for helper functions.
 - Keep helper logic testable without Discord network calls where practical.
+
+## Files Not in Git
+
+- `RUNBOOK.md` — local operational reference only; never commit it.
+- `.env` — local secrets; never commit it.
 
 ## Project Structure Hints
 

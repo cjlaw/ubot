@@ -1,24 +1,25 @@
 import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
+import type { ChatInputCommandInteraction } from "discord.js";
 import { searchEpisodes } from "../helpers/episode_helper.js";
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 const RATE_LIMIT_MAX = process.env.FINDEPISODE_RATE_LIMIT_MAX
   ? parseInt(process.env.FINDEPISODE_RATE_LIMIT_MAX, 10)
   : 5;
-const userQueryTimes = new Map();
+const userQueryTimes = new Map<string, number[]>();
 
 // Test seams — not for production use.
-export function _resetRateLimit() {
+export function _resetRateLimit(): void {
   userQueryTimes.clear();
 }
-export function _setRateLimitEntry(userId, timestamps) {
+export function _setRateLimitEntry(userId: string, timestamps: number[]): void {
   userQueryTimes.set(userId, timestamps);
 }
-export function _getRateLimitSize() {
+export function _getRateLimitSize(): number {
   return userQueryTimes.size;
 }
 
-function isRateLimited(userId) {
+function isRateLimited(userId: string): boolean {
   const now = Date.now();
   const times = (userQueryTimes.get(userId) ?? []).filter(
     (t) => now - t < RATE_LIMIT_WINDOW_MS,
@@ -47,10 +48,10 @@ export const data = new SlashCommandBuilder()
       .setRequired(true),
   );
 
-export async function execute(interaction) {
+export async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
   await interaction.deferReply();
 
-  const query = interaction.options.getString("query");
+  const query = interaction.options.getString("query", true);
 
   if (query.trim().length < 3) {
     await interaction.editReply(

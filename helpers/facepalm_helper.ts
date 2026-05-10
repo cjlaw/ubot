@@ -1,4 +1,6 @@
-export function handleFacepalmMention(message) {
+import type { Message } from "discord.js";
+
+export function handleFacepalmMention(message: Message): string | undefined {
   if (
     message.content.match(/Trump/i) &&
     !message.content.includes(":man_facepalming:")

@@ -1,10 +1,11 @@
 import { SlashCommandBuilder } from "discord.js";
+import type { ChatInputCommandInteraction } from "discord.js";
 
 export const data = new SlashCommandBuilder()
   .setName("joke")
   .setDescription("Replies with a dad joke");
 
-export async function execute(interaction) {
+export async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
   await interaction.deferReply();
   try {
     const jokeResult = await fetch("https://icanhazdadjoke.com/", {

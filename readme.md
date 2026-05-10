@@ -12,8 +12,9 @@
     facepalmEnabled=   # optional, set to "true" to enable facepalm responses
     ANTHROPIC_API_KEY= # optional, required for smart episode matching in /findepisode
     ```
-4. npm run dep-cmd
-5. node bot.js
+4. npm run build
+5. npm run dep-cmd
+6. node dist/bot.js
 
 ## tests
 `npm test` - Run all tests
