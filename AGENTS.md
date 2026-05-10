@@ -4,7 +4,8 @@
 
 - Install dependencies: `npm install`
 - Build: `npm run build` (compiles TypeScript to `dist/`)
-- Run locally: `npm run build && node dist/bot.js`
+- Run locally (quick): `npm run build && node dist/bot.js`
+- Run locally (prod-faithful): `docker build -t ubot:local . && docker run --rm --env-file .env ubot:local`
 - Register Discord slash commands: `npm run build && npm run dep-cmd`
 - Run all tests: `npm test`
 - Run one test file: `npm test -- test/name_test.js`
