@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import { parseFeed, fuzzyFilter, clearCache } from "../helpers/episode_helper.js";
+import type { Episode } from "../types.js";
 
 const FIXTURE_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0"
@@ -76,7 +77,7 @@ describe("#parseFeed", () => {
 });
 
 describe("#fuzzyFilter", () => {
-  let episodes;
+  let episodes: Episode[];
 
   before(() => {
     clearCache();

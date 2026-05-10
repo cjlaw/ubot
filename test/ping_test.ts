@@ -1,13 +1,15 @@
 import { expect } from "chai";
 import { execute } from "../commands/ping.js";
+import type { ChatInputCommandInteraction } from "discord.js";
 
 describe("#command: ping", () => {
   let mockReply = "";
-  let mockInteraction = {
-    reply: (content) => {
+  const mockInteraction = {
+    reply: (content: string) => {
       mockReply = content;
     },
-  };
+  } as unknown as ChatInputCommandInteraction;
+
   it('should return "Pong!"', async () => {
     try {
       await execute(mockInteraction);
