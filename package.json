@@ -2,13 +2,14 @@
   "name": "ubot",
   "version": "1.0.1",
   "description": "a silly discord bot for the sbfvgs discord",
-  "main": "bot.js",
+  "main": "dist/bot.js",
   "directories": {
     "test": "mocha"
   },
   "scripts": {
     "test": "mocha",
-    "dep-cmd": "node deploy-commands.js"
+    "build": "tsc",
+    "dep-cmd": "node dist/deploy-commands.js"
   },
   "repository": {
     "type": "git",
@@ -32,8 +33,11 @@
     "fast-xml-parser": "^5.7.2"
   },
   "devDependencies": {
+    "@types/node": "^25.6.2",
     "chai": "^6.2.2",
     "eslint": "^10.2.1",
-    "mocha": "^11.7.5"
+    "mocha": "^11.7.5",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
   }
 }
