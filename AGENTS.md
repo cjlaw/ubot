@@ -86,7 +86,7 @@
 
 For code review tasks:
 
-- Follow `.ai/code_review.md`
+- Follow `../standards/code_review.md` (and `./code_review.md` if present)
 - Read `.ai/reviews/current.md` before starting
 - Write final review output to `.ai/reviews/current.md`
 - Overwrite `.ai/reviews/current.md`
