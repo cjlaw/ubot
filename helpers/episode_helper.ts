@@ -154,11 +154,6 @@ export async function searchEpisodes(query: string, username: string | undefined
   const candidates = fuzzyFilter(episodes, query);
   if (candidates.length === 0) return null;
 
-  if (candidates.length === 1) {
-    console.log(`[episode-search] user=${user} query="${query}" single candidate, skipping LLM`);
-    return { results: [{ episode: candidates[0] }], fallback: false };
-  }
-
   console.log(`[episode-search] user=${user} query="${query}" candidates=${candidates.length}`);
 
   try {

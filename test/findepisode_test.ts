@@ -125,8 +125,9 @@ describe("#command: findepisode", () => {
     });
   });
 
-  describe("-when only one candidate matches (single-candidate short-circuit)", () => {
-    it("should return an embed with 1 result without calling the LLM", async () => {
+  describe("-when only one candidate matches", () => {
+    it("should pass the lone candidate through the LLM and return it when picked", async () => {
+      _setAnthropicClient(mockAnthropicPick([0]) as unknown as Anthropic);
       const interaction = mockInteraction("hades interview");
       await execute(interaction as unknown as ChatInputCommandInteraction);
       const reply = interaction.getReply() as { embeds: { data: { description: string; footer?: unknown } }[] };
@@ -139,10 +140,18 @@ describe("#command: findepisode", () => {
     });
 
     it("should not show a fallback footer", async () => {
+      _setAnthropicClient(mockAnthropicPick([0]) as unknown as Anthropic);
       const interaction = mockInteraction("hades interview");
       await execute(interaction as unknown as ChatInputCommandInteraction);
       const reply = interaction.getReply() as { embeds: { data: { footer?: unknown } }[] };
       expect(reply.embeds[0].data.footer).to.be.undefined;
+    });
+
+    it("should return a no-match message when the LLM rejects the lone candidate", async () => {
+      _setAnthropicClient(mockAnthropicPick([]) as unknown as Anthropic);
+      const interaction = mockInteraction("hades interview");
+      await execute(interaction as unknown as ChatInputCommandInteraction);
+      expect(interaction.getReply()).to.equal("No matching episode found. Try a different description.");
     });
   });
 
