@@ -57,7 +57,8 @@
   - `arnie_helper.js` — replies with Arnold Schwarzenegger quotes when "arnie" is mentioned; `sbfvgsArnie` emoji is resolved from the Discord client cache at startup and passed in
   - `facepalm_helper.js` — optionally replies to a specific user (gated by `facepalmEnabled`); uses display name instead of `<@userId>` intentionally
   - `timestamp_helper.js` — Discord timestamp format codes (`formats`) and `getOffsetMinutes` for IANA timezone → UTC offset conversion used by chrono-node
-  - `episode_helper.js` — fetches and caches the SBFVGS RSS feed (24h TTL, warmed at startup), fuzzy-filters episodes, and calls Claude Haiku to pick the best match. `parseFeed` and `fuzzyFilter` are pure/tested; `searchEpisodes` requires network + API key.
+  - `episode_helper.js` — fetches and caches the SBFVGS RSS feed (24h TTL, warmed at startup), fuzzy-filters episodes (`fuzzyFilter`), vector-filters episodes (`embedFilter`), caches episode vectors (`getEpisodeVectors`), and calls Claude Haiku to pick the best match. `parseFeed`, `fuzzyFilter`, and `embedFilter` are pure/tested; `searchEpisodes` requires network + API key.
+  - `embedding_helper.js` — lazy `Xenova/all-MiniLM-L6-v2` embedding pipeline via `@huggingface/transformers`; exports `embed(texts)`, `embedOne(text)`, `cosineSimilarity(a, b)`, and `_setEmbedder(fn)` test seam. Model is loaded via dynamic `import()` inside the singleton so `onnxruntime-node` is never loaded in unit tests.
 - `test/`: Mocha/Chai tests for commands and helpers.
 - `.env`: local runtime configuration:
   - `bot_token` — Discord bot token
@@ -65,12 +66,25 @@
   - `guildId` — Discord guild ID (used by `dep-cmd` to register slash commands)
   - `facepalmEnabled` — optional; set to `"true"` to enable facepalm responses
   - `ANTHROPIC_API_KEY` — required for `/findepisode` smart search; falls back to fuzzy match if missing
+  - `HF_CACHE_DIR` — optional; overrides where `@huggingface/transformers` caches the embedding model (default: inside `node_modules`). Set to a persistent path (e.g. `/hf-cache`) in containers.
 
 **Dependencies of note:**
 
 - `chrono-node` — natural language date parsing for `/timestamp` (e.g. "tomorrow at 5pm")
 - `@anthropic-ai/sdk` — Anthropic API client used by `episode_helper.js` for LLM-powered episode matching
 - `fast-xml-parser` — RSS feed parsing used by `episode_helper.js`
+- `@huggingface/transformers` — local embedding model (`Xenova/all-MiniLM-L6-v2`) used by `embedding_helper.js` for semantic episode retrieval; requires `onnxruntime-node` native binary (not available on Intel Mac — use the linux/amd64 dev container for real-model work). **devDependency only** — embeddings are parked (they underperformed fuzzy in eval); the live `/findepisode` path uses `fuzzyFilter`. `embedFilter`/`getEpisodeVectors` exist for offline eval (`scripts/eval_findepisode.ts`) and a future hybrid-retrieval attempt.
+
+**Dev container (real-model eval on Intel Mac):**
+
+`onnxruntime-node` has no Intel Mac (darwin/x64) binary. Unit tests use `_setEmbedder` to mock the model and run on the host. For real-model work (running `scripts/eval_findepisode.ts`), use the linux/amd64 dev container:
+
+```bash
+# Build once (or after dep changes)
+podman build --platform linux/amd64 -f Dockerfile.dev -t ubot:dev .
+# Run eval (model cached in named volume after first run)
+podman run --rm --platform linux/amd64 --env-file .env -v ubot-hf-cache:/hf-cache ubot:dev
+```
 
 ## Examples And Patterns
 
@@ -81,8 +95,6 @@
 - Avoid changing emoji names or environment variable names without updating all call sites and tests.
 
 ## Code review
-
-## Code Review
 
 For code review tasks:
 

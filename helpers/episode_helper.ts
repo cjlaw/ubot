@@ -2,13 +2,14 @@ import { XMLParser } from "fast-xml-parser";
 import Anthropic from "@anthropic-ai/sdk";
 import type { ToolUseBlock } from "@anthropic-ai/sdk/resources/messages.js";
 import type { Episode, EpisodeResult, SearchResult } from "../types.js";
+import { embed, embedOne, cosineSimilarity } from "./embedding_helper.js";
 
 const FEED_URL = "https://feeds.megaphone.fm/ADL8067347777";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const FUZZY_TOP_N = 8;
 const MIN_QUERY_LENGTH = 3;
 
-let cache: { episodes: Episode[]; fetchedAt: number } | null = null;
+let cache: { episodes: Episode[]; vectors: Float32Array[] | null; fetchedAt: number } | null = null;
 let anthropic: Anthropic | null = null;
 
 // Test seams — not for production use.
@@ -21,7 +22,7 @@ export async function getEpisodes(): Promise<Episode[]> {
   if (cache && now - cache.fetchedAt < CACHE_TTL_MS) return cache.episodes;
   try {
     const episodes = await fetchAndParse();
-    cache = { episodes, fetchedAt: now };
+    cache = { episodes, vectors: null, fetchedAt: now };
     return episodes;
   } catch (err) {
     if (cache) {
@@ -30,6 +31,15 @@ export async function getEpisodes(): Promise<Episode[]> {
     }
     throw err;
   }
+}
+
+export async function getEpisodeVectors(): Promise<Float32Array[]> {
+  const episodes = await getEpisodes();
+  if (cache!.vectors) return cache!.vectors;
+  const texts = episodes.map(ep => `${ep.title} ${ep.description}`);
+  const vectors = await embed(texts);
+  if (cache) cache.vectors = vectors;
+  return vectors;
 }
 
 export function clearCache(): void { cache = null; }
@@ -87,6 +97,15 @@ export function fuzzyFilter(episodes: Episode[], query: string, n = FUZZY_TOP_N)
   });
   return scored
     .filter(x => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, n)
+    .map(x => x.ep);
+}
+
+export async function embedFilter(episodes: Episode[], vectors: Float32Array[], query: string, n = FUZZY_TOP_N): Promise<Episode[]> {
+  const queryVec = await embedOne(query);
+  const scored = episodes.map((ep, i) => ({ ep, score: cosineSimilarity(queryVec, vectors[i]) }));
+  return scored
     .sort((a, b) => b.score - a.score)
     .slice(0, n)
     .map(x => x.ep);

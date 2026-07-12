@@ -31,7 +31,7 @@
  *                     came back in the top 3.
  *   - Rejection .... for queries that SHOULD match nothing, did it return empty?
  */
-import { searchEpisodes } from "../helpers/episode_helper.js";
+import { searchEpisodes, fuzzyFilter, embedFilter, getEpisodes, getEpisodeVectors } from "../helpers/episode_helper.js";
 
 // ---------------------------------------------------------------------------
 // 1. DATASET — the actual asset. The runner below is throwaway; this is not.
@@ -178,15 +178,90 @@ function scoreSet(got: Episode[], targets: Target[]) {
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 
 // ---------------------------------------------------------------------------
+// Stage-1 retrieval recall — retrieval function only, no LLM, no API key.
+// Runs both fuzzy and embed retrievers side-by-side at the same N (top-8).
+// Embed columns are omitted when the model is unavailable (Intel Mac host).
+// ---------------------------------------------------------------------------
+async function runStage1Recall(cases: EvalCase[]): Promise<void> {
+  const episodes = await getEpisodes();
+
+  let vectors: Float32Array[] | null = null;
+  try {
+    vectors = await getEpisodeVectors();
+  } catch (err) {
+    console.warn("[stage-1] Embedder unavailable — embed columns omitted:", (err as Error).message);
+  }
+
+  const singleRows: { query: string; fuzzy: number; embed?: number }[] = [];
+  const setRows: { query: string; fuzzy: number; embed?: number }[] = [];
+  const negRows: { query: string; "fuzzy cands": number; "embed cands"?: number }[] = [];
+
+  for (const c of cases) {
+    const fuzzyCands = fuzzyFilter(episodes, c.query);
+    const embedCands = vectors ? await embedFilter(episodes, vectors, c.query) : null;
+
+    if ("expectEmpty" in c) {
+      negRows.push({
+        query: c.query,
+        "fuzzy cands": fuzzyCands.length,
+        ...(embedCands !== null ? { "embed cands": embedCands.length } : {}),
+      });
+    } else if ("expectAll" in c) {
+      const fuzzyFrac = c.expectAll.filter((t) => fuzzyCands.some((ep) => matches(ep, t))).length / c.expectAll.length;
+      const embedFrac = embedCands
+        ? c.expectAll.filter((t) => embedCands.some((ep) => matches(ep, t))).length / c.expectAll.length
+        : undefined;
+      setRows.push({ query: c.query, fuzzy: fuzzyFrac, ...(embedFrac !== undefined ? { embed: embedFrac } : {}) });
+    } else {
+      const fuzzyHit = c.expectAny.some((t) => fuzzyCands.some((ep) => matches(ep, t))) ? 1 : 0;
+      const embedHit = embedCands
+        ? (c.expectAny.some((t) => embedCands.some((ep) => matches(ep, t))) ? 1 : 0)
+        : undefined;
+      singleRows.push({ query: c.query, fuzzy: fuzzyHit, ...(embedHit !== undefined ? { embed: embedHit } : {}) });
+    }
+  }
+
+  const label = vectors ? "(fuzzy vs embed, no LLM)" : "(fuzzy only — embed unavailable)";
+  console.log(`\n── Stage-1 retrieval recall ${label} ──`);
+
+  if (singleRows.length) {
+    console.log("\nSingle cases:");
+    console.table(singleRows.map((r) => ({
+      query: r.query,
+      "fuzzy gold@8": r.fuzzy,
+      ...(vectors ? { "embed gold@8": r.embed } : {}),
+    })));
+    console.log("Fuzzy stage-1 recall: ", avg(singleRows.map((r) => r.fuzzy)).toFixed(3));
+    if (vectors) console.log("Embed stage-1 recall: ", avg(singleRows.map((r) => r.embed ?? 0)).toFixed(3));
+  }
+  if (setRows.length) {
+    console.log("\nSet cases:");
+    console.table(setRows.map((r) => ({
+      query: r.query,
+      "fuzzy frac@8": +r.fuzzy.toFixed(3),
+      ...(vectors ? { "embed frac@8": +(r.embed ?? 0).toFixed(3) } : {}),
+    })));
+    console.log("Fuzzy stage-1 set-recall:", avg(setRows.map((r) => r.fuzzy)).toFixed(3));
+    if (vectors) console.log("Embed stage-1 set-recall:", avg(setRows.map((r) => r.embed ?? 0)).toFixed(3));
+  }
+  if (negRows.length) {
+    console.log("\nNegative cases (candidates passed to LLM):");
+    console.table(negRows);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 2 + 4. TASK RUNNER and REPORT.
 // ---------------------------------------------------------------------------
 async function main() {
+  // Stage-1 retrieval recall runs unconditionally — no API key, no LLM, cheap.
+  await runStage1Recall(CASES);
+
   if (!process.env.ANTHROPIC_API_KEY) {
-    console.error(
-      "No ANTHROPIC_API_KEY set — searchEpisodes would fall back to fuzzy-only " +
-        "and you'd be evaluating the wrong code path. Aborting.",
+    console.log(
+      "\nNo ANTHROPIC_API_KEY — skipping full end-to-end eval (stage-2 LLM rerank).",
     );
-    process.exit(1);
+    return;
   }
 
   const singleRows: { query: string; recall: number; mrr: number }[] = [];

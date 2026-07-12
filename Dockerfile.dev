@@ -1,0 +1,9 @@
+FROM --platform=linux/amd64 node:22-bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends libatomic1 \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+ENV HF_CACHE_DIR=/hf-cache
+CMD ["npx", "tsx", "scripts/eval_findepisode.ts"]
