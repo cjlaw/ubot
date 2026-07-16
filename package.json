@@ -39,7 +39,7 @@
     "@types/mocha": "^10.0.10",
     "@types/node": "^26.1.1",
     "chai": "^6.2.2",
-    "eslint": "^10.6.0",
+    "eslint": "^10.7.0",
     "mocha": "^11.7.6",
     "tsx": "^4.23.0",
     "typescript": "^7.0.2"
