@@ -28,7 +28,7 @@
   "homepage": "https://github.com/cjlaw/sbfbot#readme",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.112.1",
-    "chrono-node": "^2.10.0",
+    "chrono-node": "^2.10.1",
     "discord.js": "^14.27.0",
     "dotenv": "^17.4.2",
     "fast-xml-parser": "^5.9.3"
