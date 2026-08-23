@@ -26,6 +26,13 @@
     "url": "https://github.com/cjlaw/sbfbot/issues"
   },
   "homepage": "https://github.com/cjlaw/sbfbot#readme",
+  "overrides": {
+    "adm-zip": "^0.6.0",
+    "sharp": "^0.35.0",
+    "protobufjs": "^7.6.5",
+    "diff": "^8.0.4",
+    "serialize-javascript": "^7.0.5"
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.117.1",
     "chrono-node": "^2.10.1",
