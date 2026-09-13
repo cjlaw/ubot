@@ -27,8 +27,8 @@
   },
   "homepage": "https://github.com/cjlaw/sbfbot#readme",
   "overrides": {
-    "adm-zip": "^0.6.0",
-    "sharp": "^0.35.0",
+    "adm-zip": "^0.6.1",
+    "sharp": "^0.35.4",
     "protobufjs": "^7.6.5",
     "diff": "^8.0.4",
     "serialize-javascript": "^7.0.5"
