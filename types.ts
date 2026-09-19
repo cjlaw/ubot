@@ -1,4 +1,4 @@
-import type { SlashCommandBuilder, ChatInputCommandInteraction } from "discord.js";
+import type { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction } from "discord.js";
 
 export interface Episode {
   number: string | number | null;
@@ -21,4 +21,5 @@ export interface SearchResult {
 export interface Command {
   data: SlashCommandBuilder | Omit<SlashCommandBuilder, "addSubcommand" | "addSubcommandGroup">;
   execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
+  autocomplete?: (interaction: AutocompleteInteraction) => Promise<void>;
 }

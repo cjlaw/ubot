@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { execute, _resetRateLimit, _setRateLimitEntry, _getRateLimitSize } from "../commands/findepisode.js";
+import { execute, autocomplete, _resetRateLimit, _setRateLimitEntry, _getRateLimitSize } from "../commands/findepisode.js";
 import { clearCache, _setAnthropicClient, _setFetch } from "../helpers/episode_helper.js";
 import type { ChatInputCommandInteraction } from "discord.js";
 import type Anthropic from "@anthropic-ai/sdk";
@@ -24,6 +24,13 @@ const FIXTURE_XML = `<?xml version="1.0" encoding="UTF-8"?>
       <pubDate>Mon, 01 Jan 2024 12:00:00 -0000</pubDate>
       <itunes:episode>9</itunes:episode>
       <enclosure url="https://pdcn.co/e/traffic.megaphone.fm/ADL9876543210.mp3?updated=456" length="0" type="audio/mpeg"/>
+    </item>
+    <item>
+      <title>SBFVGS - Ep.8: ${"X".repeat(110)}</title>
+      <description>An episode with a very long title to test truncation.</description>
+      <pubDate>Mon, 25 Dec 2023 12:00:00 -0000</pubDate>
+      <itunes:episode>8</itunes:episode>
+      <enclosure url="https://pdcn.co/e/traffic.megaphone.fm/ADL0000000008.mp3?updated=789" length="0" type="audio/mpeg"/>
     </item>
   </channel>
 </rss>`;
@@ -302,6 +309,63 @@ describe("#command: findepisode", () => {
       expect(reply).to.be.an("object");
       expect(reply.embeds[0].data.description).to.include("Ep. 10");
       expect(reply.embeds[0].data.footer.text).to.include("Fuzzy match");
+    });
+  });
+});
+
+describe("#autocomplete: findepisode", () => {
+  const mockAutocompleteInteraction = (focused: string) => {
+    let responded: Array<{ name: string; value: string }> | null = null;
+    return {
+      options: { getFocused: () => focused },
+      respond: async (choices: Array<{ name: string; value: string }>) => { responded = choices; },
+      getResponded: () => responded,
+    };
+  };
+
+  beforeEach(() => {
+    clearCache();
+    _setFetch(mockFetch as unknown as typeof fetch);
+  });
+
+  afterEach(() => {
+    _setFetch((...args) => fetch(...args));
+  });
+
+  describe("-when query matches by title", () => {
+    it("should return a choice with value ep:10 for query 'hades'", async () => {
+      const interaction = mockAutocompleteInteraction("hades");
+      await autocomplete(interaction as unknown as import("discord.js").AutocompleteInteraction);
+      const choices = interaction.getResponded()!;
+      expect(choices.some((c) => c.value === "ep:10")).to.be.true;
+    });
+  });
+
+  describe("-when choices are returned", () => {
+    it("should return at most 25 choices", async () => {
+      const interaction = mockAutocompleteInteraction("sbfvgs");
+      await autocomplete(interaction as unknown as import("discord.js").AutocompleteInteraction);
+      const choices = interaction.getResponded()!;
+      expect(choices.length).to.be.at.most(25);
+    });
+
+    it("should truncate name and value to 100 chars", async () => {
+      const interaction = mockAutocompleteInteraction("");
+      await autocomplete(interaction as unknown as import("discord.js").AutocompleteInteraction);
+      const choices = interaction.getResponded()!;
+      for (const choice of choices) {
+        expect(choice.name.length).to.be.at.most(100);
+        expect(choice.value.length).to.be.at.most(100);
+      }
+    });
+
+    it("should truncate the name of the long-title episode to 100 chars", async () => {
+      const interaction = mockAutocompleteInteraction("");
+      await autocomplete(interaction as unknown as import("discord.js").AutocompleteInteraction);
+      const choices = interaction.getResponded()!;
+      const ep8 = choices.find((c) => c.value === "ep:8");
+      expect(ep8).to.exist;
+      expect(ep8!.name.length).to.equal(100);
     });
   });
 });
