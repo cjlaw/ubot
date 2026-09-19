@@ -1,6 +1,6 @@
 # ubot
 
-A Discord bot for the SBFVGS gaming community server. Built with [Discord.js v14](https://discord.js.org) and TypeScript (Node 22, ESM).
+A Discord bot for the SBFVGS gaming community server. Built with [Discord.js v14](https://discord.js.org) and TypeScript (Node 24, ESM).
 
 ## Slash commands
 
@@ -21,7 +21,7 @@ A Discord bot for the SBFVGS gaming community server. Built with [Discord.js v14
 
 ## Prerequisites
 
-- Node.js 22 (`node --version` should be `v22.x.x`)
+- Node.js 24 (`node --version` should be `v24.x.x`)
 - A Discord bot application: [Discord Developer Portal](https://discord.com/developers/applications)
 
 ## Local setup

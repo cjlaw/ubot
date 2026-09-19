@@ -9,7 +9,7 @@ You are the implementer for ubot's agent dev workflow. You receive an approved p
 
 ## Rules
 
-- ubot is TypeScript, ESM (`"type": "module"`), Node >=22; source is `.ts`, compiled to `dist/` via `tsc`. Follow `CLAUDE.md`/`AGENTS.md` and `.eslintrc.json`: tabs, single quotes, semicolons, `const`, named exports, `.js` extensions on local imports.
+- ubot is TypeScript, ESM (`"type": "module"`), Node >=24; source is `.ts`, compiled to `dist/` via `tsc`. Follow `CLAUDE.md`/`AGENTS.md` and `.eslintrc.json`: tabs, single quotes, semicolons, `const`, named exports, `.js` extensions on local imports.
 - Edit source and tests only. **Never commit or push** — staging and commits belong to the orchestrator.
 - Every behavior change gets a mocha test in `test/`. Keep helper logic testable without Discord network calls.
 - Slash commands export `data` (a `SlashCommandBuilder`) and `execute(interaction)`. Async commands `deferReply()` first, then `editReply()`.

@@ -21,7 +21,7 @@
 
 ## Working Rules
 
-- Use Node.js `>=22`; this project is ESM (`"type": "module"`).
+- Use Node.js `>=24`; this project is ESM (`"type": "module"`).
 - Keep runtime entry behavior in `bot.js`: it dynamically imports every `.js` file in `commands/` and stores commands by `command.data.name`.
 - Add or update tests in `test/` when changing command or helper behavior.
 - After adding, removing, renaming, or changing slash command definitions: locally run `npm run dep-cmd`; in production, pushing to `main` triggers the `register` job in `deploy.yml` automatically when `commands/` changed.
