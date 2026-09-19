@@ -6,3 +6,4 @@ dist/
 # AI working state
 .ai/reviews/
 .ai/context/
+.ai/tasks/
