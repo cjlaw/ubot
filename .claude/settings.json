@@ -14,31 +14,14 @@
       "Bash(git pull*)",
       "Bash(git push*)",
       "Bash(git rev-parse*)",
+      "Bash(git merge-base*)",
+      "Bash(git reset --soft*)",
       "Bash(git hash-object*)",
       "Bash(npx tsc*)",
       "Bash(gh issue*)",
       "Bash(gh pr*)",
       "Bash(gh label*)",
       "Bash(gh repo*)"
-    ]
-  },
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "jq -r '.tool_input.file_path' | { read -r f; echo \"$f\" | grep -q 'bot\\.js$' && node --check \"$f\"; } 2>/dev/null || true",
-            "statusMessage": "Checking bot.js syntax..."
-          },
-          {
-            "type": "command",
-            "command": "jq -r '.tool_input.file_path' | { read -r f; echo \"$f\" | grep -qE '\\.js$' && node ./node_modules/.bin/mocha; } 2>/dev/null || true",
-            "statusMessage": "Running tests..."
-          }
-        ]
-      }
     ]
   }
 }
