@@ -18,6 +18,7 @@
       "Bash(git reset --soft*)",
       "Bash(git hash-object*)",
       "Bash(npx tsc*)",
+      "Bash(npx mocha*)",
       "Bash(gh issue*)",
       "Bash(gh pr*)",
       "Bash(gh label*)",
