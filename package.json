@@ -34,10 +34,10 @@
     "serialize-javascript": "^7.0.5"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.128.0",
+    "@anthropic-ai/sdk": "^0.129.0",
     "chrono-node": "^2.10.1",
     "discord.js": "^14.27.0",
-    "dotenv": "^18.0.3",
+    "dotenv": "^18.0.4",
     "fast-xml-parser": "^5.11.1"
   },
   "devDependencies": {
