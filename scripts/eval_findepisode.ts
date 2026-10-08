@@ -6,6 +6,15 @@
  * hand — never wired into `npm test`, or CI would be flaky and cost money.
  *
  *   ANTHROPIC_API_KEY=... npx tsx scripts/eval_findepisode.ts
+ *   ANTHROPIC_API_KEY=... npx tsx scripts/eval_findepisode.ts --rerank
+ *
+ * Default mode is end-to-end (fuzzy retrieval -> LLM rerank, exactly as prod).
+ * --rerank skips retrieval: each case's gold episodes are injected into the
+ * candidate set, padded with the fuzzy filter's non-gold picks as decoys, and
+ * passed straight to the LLM. Use it to compare models/prompts — a stage-1
+ * miss can't cap the score, so differences are the reranker's alone.
+ *
+ * Baseline, run history and labeling rules: scripts/eval_findepisode.md
  *
  * Purpose: measure whether a prompt/model change makes episode matching better
  * or worse, instead of guessing. Workflow:
@@ -31,7 +40,8 @@
  *                     came back in the top 3.
  *   - Rejection .... for queries that SHOULD match nothing, did it return empty?
  */
-import { searchEpisodes, fuzzyFilter, embedFilter, getEpisodes, getEpisodeVectors } from "../helpers/episode_helper.js";
+import { searchEpisodes, llmPickTop3, fuzzyFilter, embedFilter, getEpisodes, getEpisodeVectors } from "../helpers/episode_helper.js";
+import type { Episode as FeedEpisode } from "../types.js";
 
 // ---------------------------------------------------------------------------
 // 1. DATASET — the actual asset. The runner below is throwaway; this is not.
@@ -43,7 +53,7 @@ import { searchEpisodes, fuzzyFilter, embedFilter, getEpisodes, getEpisodeVector
 // that misbehaves should become a permanent case here.
 // ---------------------------------------------------------------------------
 type Target = { number?: number; titleIncludes?: string };
-type SingleCase = { query: string; expectAny: Target[] }; // OR — any acceptable
+type SingleCase = { query: string; expectAny: Target[]; northStar?: true }; // OR — any acceptable; northStar = reported apart from the headline
 type SetCase = { query: string; expectAll: Target[] }; // AND — the whole set (≤3)
 type NegativeCase = { query: string; expectEmpty: true };
 type EvalCase = SingleCase | SetCase | NegativeCase;
@@ -132,20 +142,33 @@ const CASES: EvalCase[] = [
   { query: "how do i file my taxes", expectEmpty: true },
   { query: "best ramen in tokyo", expectEmpty: true },
 
-  // hard negatives: plausible games the show never covered. The filter still surfaces a weak
-  // decoy, so the LLM IS invoked and must return empty instead of grabbing the lone candidate.
-  { query: "madden 2025", expectEmpty: true },       // absent; #204 surfaces via "2025"
-  { query: "mina the hollower", expectEmpty: true }, // absent; #189 surfaces via "mina"
+  // hard negatives: plausible games the show never covered. The filter still surfaces decoys,
+  // so the LLM IS invoked and must return empty instead of grabbing a weak candidate.
+  // Check the stage-1 "fuzzy cands" column after any fuzzyFilter change — 0 means the case
+  // no longer reaches the LLM (how "mina the hollower" died with word-start matching).
+  // Negatives must have only unrelated decoys — check the decoys' notes, not just the title
+  // (the lenient-bar cases below were both mislabeled negatives at first).
+  { query: "madden 2025", expectEmpty: true }, // absent; #204 surfaces via "2025"
+  { query: "astro bot", expectEmpty: true },   // absent; 2 unrelated decoys via "bot" -> "both"
 
-  // NORTH STAR — currently unanswerable; documents the two upgrade paths.
-  // Fails today: "arnies"≠"Arnolds" filters #ChristmasIII out (retrieval), AND the song
-  // is in no show notes (corpus). Recall@3 passing would prove embeddings fixed retrieval;
-  // MRR=1 would prove transcripts fixed the corpus. The query that started it all.
-  { query: "dueling arnies sing baby its cold outside", expectAny: [{ titleIncludes: "Christmas III" }] },
+  // LENIENT BAR: for a game the show never covered, a same-franchise episode is the preferred
+  // answer over empty. Neither query's game is in the feed.
+  { query: "hollow knight silksong", expectAny: [{ titleIncludes: "Ep.104" }] }, // #104 discusses Hollow Knight
+  { query: "zelda echoes of wisdom", expectAny: [{ titleIncludes: "Zelda's Legacy" }] }, // #191
+
+  // NORTH STAR — currently unanswerable. The query that started it all.
+  // Retrieval: III's notes say "Dueling of the Arnolds", so it shares only "dueling" with the
+  // query and ties with ~20 episodes; Christmas VI/VIII say "Dueling Arnies" and outrank it.
+  // Corpus: the song is in no show notes. --rerank (III injected) gets recall@3=1 but MRR≈0.6 —
+  // the LLM finds "a Christmas episode" but can't tell which year had the song. Transcripts
+  // are the fix; MRR=1 end-to-end would prove it.
+  // Excluded from the headline so a known-unanswerable case doesn't mask real movement.
+  { query: "dueling arnies sing baby its cold outside", expectAny: [{ titleIncludes: "Christmas III" }], northStar: true },
 
 ];
 
 const RUNS_PER_CASE = 5; // average out the model's non-determinism
+const RERANK = process.argv.includes("--rerank");
 
 // ---------------------------------------------------------------------------
 // 3. SCORERS — turn one run's output into numbers, by case kind.
@@ -176,6 +199,24 @@ function scoreSet(got: Episode[], targets: Target[]) {
 }
 
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
+
+// --rerank candidate set: gold first, then the fuzzy filter's non-gold picks (the
+// realistic decoys), same size as prod's candidate list. Negatives get plain fuzzy.
+function oracleCandidates(episodes: FeedEpisode[], c: EvalCase): FeedEpisode[] {
+  const fuzzy = fuzzyFilter(episodes, c.query);
+  if ("expectEmpty" in c) return fuzzy;
+  const targets = "expectAll" in c ? c.expectAll : c.expectAny;
+  const gold = [...new Set(targets.map((t) => {
+    const ep = episodes.find((e) => matches(e, t));
+    if (!ep) throw new Error(`No feed episode matches ${JSON.stringify(t)} (query: "${c.query}")`);
+    return ep;
+  }))];
+  const decoys = fuzzy.filter((ep) => !gold.includes(ep));
+  return [...gold, ...decoys].slice(0, Math.max(fuzzy.length, gold.length));
+}
+
+// Shift the list each run so gold lands in different slots — averages out position bias.
+const rotate = <T>(xs: T[], k: number): T[] => xs.map((_, i) => xs[(i + k) % xs.length]);
 
 // ---------------------------------------------------------------------------
 // Stage-1 retrieval recall — retrieval function only, no LLM, no API key.
@@ -264,16 +305,23 @@ async function main() {
     return;
   }
 
-  const singleRows: { query: string; recall: number; mrr: number }[] = [];
+  const singleRows: { query: string; recall: number; mrr: number; northStar: boolean }[] = [];
   const setRows: { query: string; setRecall: number }[] = [];
   const negRows: { query: string; rejected: number }[] = [];
+  const episodes = await getEpisodes();
 
   for (const c of CASES) {
-    // run the real search N times, collect the top-3 episodes each time
+    // run N times, collect the top-3 episodes each time
     const runs: Episode[][] = [];
+    const candidates = RERANK ? oracleCandidates(episodes, c) : [];
     for (let i = 0; i < RUNS_PER_CASE; i++) {
-      const result = await searchEpisodes(c.query, "eval");
-      runs.push(result?.results.map((r) => r.episode) ?? []);
+      if (RERANK) {
+        const picked = await llmPickTop3(c.query, rotate(candidates, i));
+        runs.push(picked.map((r) => r.episode));
+      } else {
+        const result = await searchEpisodes(c.query, "eval");
+        runs.push(result?.results.map((r) => r.episode) ?? []);
+      }
     }
 
     if ("expectEmpty" in c) {
@@ -290,6 +338,7 @@ async function main() {
         query: c.query,
         recall: avg(s.map((x) => x.recallAt3)),
         mrr: avg(s.map((x) => x.reciprocalRank)),
+        northStar: c.northStar === true,
       });
     }
   }
@@ -311,10 +360,13 @@ async function main() {
   }
 
   // Headline metrics — the numbers you compare across prompt versions.
+  const scored = singleRows.filter((r) => !r.northStar);
+  const northStars = singleRows.filter((r) => r.northStar);
   console.log("─".repeat(40));
-  if (singleRows.length) {
-    console.log("Recall@3:          ", avg(singleRows.map((r) => r.recall)).toFixed(3));
-    console.log("MRR:               ", avg(singleRows.map((r) => r.mrr)).toFixed(3));
+  console.log(`Mode: ${RERANK ? "rerank (oracle candidates)" : "end-to-end"}`);
+  if (scored.length) {
+    console.log("Recall@3:          ", avg(scored.map((r) => r.recall)).toFixed(3));
+    console.log("MRR:               ", avg(scored.map((r) => r.mrr)).toFixed(3));
   }
   if (setRows.length) {
     console.log("Set-recall@3:      ", avg(setRows.map((r) => r.setRecall)).toFixed(3));
@@ -323,9 +375,12 @@ async function main() {
     console.log("Rejection accuracy:", avg(negRows.map((r) => r.rejected)).toFixed(3));
   }
   console.log(
-    `(${singleRows.length} single + ${setRows.length} set + ${negRows.length} negative, ` +
+    `(${scored.length} single + ${setRows.length} set + ${negRows.length} negative, ` +
       `${RUNS_PER_CASE} runs each)`,
   );
+  for (const r of northStars) {
+    console.log(`North Star (not in headline): "${r.query}" recall@3=${r.recall} MRR=${r.mrr.toFixed(3)}`);
+  }
 }
 
 main().catch((err) => {

@@ -90,9 +90,12 @@ const STOP_WORDS = new Set(["the", "an", "is", "of", "for", "and", "to", "in", "
 export function fuzzyFilter(episodes: Episode[], query: string, n = FUZZY_TOP_N): Episode[] {
   const terms = query.toLowerCase().split(/\W+/).filter(t => t.length >= 2 && !STOP_WORDS.has(t));
   if (terms.length === 0) return [];
+  // Word-start match: "sing" must not hit "losing", but "patty" should still hit "pattyhayesjr".
+  // Terms are \w-only (split on \W), so no regex escaping is needed.
+  const patterns = terms.map(t => new RegExp(`\\b${t}`));
   const scored = episodes.map(ep => {
     const haystack = `${ep.title} ${ep.description}`.toLowerCase();
-    const score = terms.reduce((s, t) => s + (haystack.includes(t) ? 1 : 0), 0);
+    const score = patterns.reduce((s, p) => s + (p.test(haystack) ? 1 : 0), 0);
     return { ep, score };
   });
   return scored
@@ -123,7 +126,7 @@ export async function llmPickTop3(query: string, candidates: Episode[]): Promise
   const candidateText = JSON.stringify(candidateList, null, 2);
 
   const response = await anthropic.messages.create({
-    model: "claude-haiku-4-5-20251001",
+    model: "claude-haiku-5-5",
     max_tokens: 256,
     tools: [{
       name: "pick_episodes",
