@@ -53,7 +53,7 @@ export async function handleReaction(
     try {
       await reaction.fetch();
     } catch (error) {
-      console.error("Something went wrong when fetching the message:", error);
+      console.error("Something went wrong when fetching the message:", formatError(error));
       return;
     }
   }

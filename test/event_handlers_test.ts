@@ -34,7 +34,7 @@ describe("handleReaction edge cases", () => {
 
   const user = { id: "1" } as unknown as User;
 
-  it("logs and does not send when the partial fetch fails", async () => {
+  it("logs a formatted error and does not send when the partial fetch fails", async () => {
     let sent = 0;
     const reaction = {
       partial: true,
@@ -45,6 +45,8 @@ describe("handleReaction edge cases", () => {
     await handleReaction(reaction, user);
     expect(sent).to.equal(0);
     expect(errors).to.have.lengthOf(1);
+    expect(errors[0].every((arg) => typeof arg === "string")).to.equal(true);
+    expect(errors[0].join(" ")).to.include("fetch failed");
   });
 
   it("is a no-op when the channel cannot send", async () => {
