@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { EventEmitter } from "node:events";
 import { inspect } from "node:util";
-import type { GuildEmoji, Interaction, Message, MessageReaction, User } from "discord.js";
+import type { GuildEmoji, Interaction, Message, MessageReaction, ModalSubmitInteraction, User } from "discord.js";
 import {
   handleInteraction,
   handleReaction,
@@ -31,6 +31,7 @@ const stringify = (arg: unknown): string =>
   typeof arg === "string" ? arg : inspect(arg, { depth: null });
 const callText = (args: unknown[]): string => args.map(stringify).join(" ");
 const allText = (calls: Calls): string => calls.map(callText).join("\n");
+const allStrings = (calls: Calls): boolean => calls.every((args) => args.every((arg) => typeof arg === "string"));
 
 const permError = (content: string): Error =>
   Object.assign(new Error("Missing Permissions"), {
@@ -116,8 +117,10 @@ const facepalmReplyText = (): string => {
 };
 
 const makeInteraction = (opts: {
-  commandName: string;
+  commandName?: string;
   chatInput?: boolean;
+  modalSubmit?: boolean;
+  customId?: string;
   replied?: boolean;
   deferred?: boolean;
   reply?: (payload: unknown) => Promise<unknown>;
@@ -127,9 +130,11 @@ const makeInteraction = (opts: {
   const followUps: unknown[] = [];
   const interaction = {
     commandName: opts.commandName,
+    customId: opts.customId,
     replied: opts.replied ?? false,
     deferred: opts.deferred ?? false,
     isChatInputCommand: () => opts.chatInput ?? true,
+    isModalSubmit: () => opts.modalSubmit ?? false,
     reply: async (payload: unknown) => {
       replies.push(payload);
       if (opts.reply) return opts.reply(payload);
@@ -153,6 +158,32 @@ const makeCommands = (execute: Command["execute"]) => {
   };
   return { commands: new Map<string, Command>([["boom", command]]), executed };
 };
+
+const makeModalCommands = (opts: {
+  name?: string;
+  handleModalSubmit?: (interaction: ModalSubmitInteraction) => Promise<void>;
+  withoutModalHandler?: boolean;
+} = {}) => {
+  const executed: unknown[] = [];
+  const submitted: unknown[] = [];
+  const command: Command = {
+    data: {} as Command["data"],
+    execute: async (interaction) => { executed.push(interaction); },
+  };
+  if (!opts.withoutModalHandler) {
+    command.handleModalSubmit = async (interaction) => {
+      submitted.push(interaction);
+      if (opts.handleModalSubmit) return opts.handleModalSubmit(interaction);
+    };
+  }
+  return { commands: new Map<string, Command>([[opts.name ?? "featurerequest", command]]), executed, submitted };
+};
+
+const modalInteraction = (customId: string, extra: Parameters<typeof makeInteraction>[0] = {}) =>
+  makeInteraction({ chatInput: false, modalSubmit: true, customId, ...extra });
+
+const throwingModalCommands = () =>
+  makeModalCommands({ handleModalSubmit: async () => { throw new Error("Modal exploded"); } });
 
 const throwingCommands = () => makeCommands(async () => { throw new Error("Command exploded"); });
 
@@ -632,6 +663,100 @@ describe("#event handlers (acceptance)", () => {
       expect(replies).to.deep.equal([]);
       expect(followUps).to.deep.equal([]);
       expect(logs.error).to.deep.equal([]);
+    });
+  });
+
+  describe("-modal submit routing (#166 featurerequest)", () => {
+    it("modal routing: modal submit with a matching customId calls that command's handleModalSubmit once with the interaction", async () => {
+      const { commands, executed, submitted } = makeModalCommands();
+      const { interaction, replies, followUps } = modalInteraction("featurerequest");
+      await handleInteraction(interaction, commands);
+      expect(submitted).to.deep.equal([interaction]);
+      expect(executed).to.deep.equal([]);
+      expect(replies).to.deep.equal([]);
+      expect(followUps).to.deep.equal([]);
+      expect(logs.error).to.deep.equal([]);
+    });
+
+    it("modal routing: unknown customId is a no-op (no handler, no reply, no log)", async () => {
+      const { commands, executed, submitted } = makeModalCommands();
+      const { interaction, replies, followUps } = modalInteraction("somethingelse");
+      await handleInteraction(interaction, commands);
+      expect(submitted).to.deep.equal([]);
+      expect(executed).to.deep.equal([]);
+      expect(replies).to.deep.equal([]);
+      expect(followUps).to.deep.equal([]);
+      expect(logs.error).to.deep.equal([]);
+    });
+
+    it("modal routing: customId is matched exactly (featurerequest:x does not route to featurerequest)", async () => {
+      const { commands, executed, submitted } = makeModalCommands();
+      const { interaction, replies, followUps } = modalInteraction("featurerequest:x");
+      await handleInteraction(interaction, commands);
+      expect(submitted).to.deep.equal([]);
+      expect(executed).to.deep.equal([]);
+      expect(replies).to.deep.equal([]);
+      expect(followUps).to.deep.equal([]);
+      expect(logs.error).to.deep.equal([]);
+    });
+
+    it("modal routing: command without handleModalSubmit is a no-op and execute is not called", async () => {
+      const { commands, executed } = makeModalCommands({ withoutModalHandler: true });
+      const { interaction, replies, followUps } = modalInteraction("featurerequest");
+      await handleInteraction(interaction, commands);
+      expect(executed).to.deep.equal([]);
+      expect(replies).to.deep.equal([]);
+      expect(followUps).to.deep.equal([]);
+      expect(logs.error).to.deep.equal([]);
+    });
+
+    it("modal routing: handler throws -> error logged as strings and ephemeral error sent via reply", async () => {
+      const { commands } = throwingModalCommands();
+      const { interaction, replies, followUps } = modalInteraction("featurerequest");
+      await handleInteraction(interaction, commands);
+      expect(logs.error.length).to.be.at.least(1);
+      expect(allStrings(logs.error)).to.equal(true);
+      expect(allText(logs.error)).to.include("Modal exploded");
+      expect(replies).to.deep.equal([ERROR_REPLY]);
+      expect(followUps).to.deep.equal([]);
+    });
+
+    it("modal routing: handler throws with deferred=true -> ephemeral error sent via followUp", async () => {
+      const { commands } = throwingModalCommands();
+      const { interaction, replies, followUps } = modalInteraction("featurerequest", { deferred: true });
+      await handleInteraction(interaction, commands);
+      expect(followUps).to.deep.equal([ERROR_REPLY]);
+      expect(replies).to.deep.equal([]);
+      expect(allText(logs.error)).to.include("Modal exploded");
+    });
+
+    it("modal routing: handler throws with replied=true -> ephemeral error sent via followUp", async () => {
+      const { commands } = throwingModalCommands();
+      const { interaction, replies, followUps } = modalInteraction("featurerequest", { replied: true });
+      await handleInteraction(interaction, commands);
+      expect(followUps).to.deep.equal([ERROR_REPLY]);
+      expect(replies).to.deep.equal([]);
+    });
+
+    it("modal routing: handler throws and the error reply rejects -> resolves and logs both errors", async () => {
+      const { commands } = throwingModalCommands();
+      const { interaction, replies } = modalInteraction("featurerequest", {
+        reply: async () => { throw Object.assign(new Error("Unknown interaction"), { code: 10062 }); },
+      });
+      await handleInteraction(interaction, commands);
+      expect(replies).to.have.lengthOf(1);
+      const text = allText(logs.error);
+      expect(text).to.include("Modal exploded");
+      expect(text).to.include("Unknown interaction");
+    });
+
+    it("modal routing: chat-input interaction for a command with handleModalSubmit still calls execute only", async () => {
+      const { commands, executed, submitted } = makeModalCommands();
+      const { interaction, replies } = makeInteraction({ commandName: "featurerequest" });
+      await handleInteraction(interaction, commands);
+      expect(executed).to.deep.equal([interaction]);
+      expect(submitted).to.deep.equal([]);
+      expect(replies).to.deep.equal([]);
     });
   });
 });

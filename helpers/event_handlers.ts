@@ -1,10 +1,12 @@
 import type { EventEmitter } from "node:events";
 import { Events } from "discord.js";
 import type {
+  ChatInputCommandInteraction,
   GuildEmoji,
   Interaction,
   Message,
   MessageReaction,
+  ModalSubmitInteraction,
   PartialMessageReaction,
   PartialUser,
   User,
@@ -19,16 +21,31 @@ export async function handleInteraction(
   interaction: Interaction,
   commands: { get(name: string): Command | undefined },
 ): Promise<void> {
+  if (interaction.isModalSubmit()) {
+    const handler = commands.get(interaction.customId)?.handleModalSubmit;
+    if (!handler) return;
+    await runInteractionHandler(interaction, interaction.customId, () => handler(interaction));
+    return;
+  }
+
   if (!interaction.isChatInputCommand()) return;
 
   const command = commands.get(interaction.commandName);
 
   if (!command) return;
 
+  await runInteractionHandler(interaction, interaction.commandName, () => command.execute(interaction));
+}
+
+async function runInteractionHandler(
+  interaction: ChatInputCommandInteraction | ModalSubmitInteraction,
+  name: string,
+  run: () => Promise<void>,
+): Promise<void> {
   try {
-    await command.execute(interaction);
+    await run();
   } catch (error) {
-    console.error(`Command ${interaction.commandName} failed:`, formatError(error));
+    console.error(`Command ${name} failed:`, formatError(error));
     const payload = {
       content: "There was an error while executing this command!",
       ephemeral: true,
