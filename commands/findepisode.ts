@@ -113,8 +113,9 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
       .setDescription(description)
       .setColor(0x5865f2);
 
-    if (fallback)
+    if (fallback) {
       embed.setFooter({ text: "Fuzzy match (smart search unavailable)" });
+    }
 
     await interaction.editReply({ embeds: [embed] });
   } catch (error) {

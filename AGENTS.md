@@ -9,7 +9,7 @@
 - Register Discord slash commands: `npm run build && npm run dep-cmd`
 - Run all tests: `npm test`
 - Run one test file: `npm test -- test/name_test.js`
-- Lint: `npx eslint .`
+- Lint: `npm run lint`
 - Typecheck source: `npx tsc --noEmit`
 - Typecheck tests: `npm run typecheck:test`
 - Deploys are automatic on push to `main` (test → build image → push to GHCR → deploy via GitHub Actions) **only when deployable files change** (see positive list in `deploy.yml`'s `changes` job). Pushes touching only docs, tests, or workflows skip build/deploy but still run tests.
@@ -34,10 +34,10 @@
 
 ## Code Style & Conventions
 
-- Follow `.eslintrc.json`.
+- Follow `eslint.config.js`.
 - Use ESM `import`/`export`; include `.js` extensions in local imports.
-- Use tabs for indentation.
-- Use single quotes and semicolons.
+- Use 2-space indentation.
+- Use double quotes and semicolons.
 - Prefer `const`; avoid `var`.
 - Use named exports for helper functions.
 - Keep helper logic testable without Discord network calls where practical.

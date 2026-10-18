@@ -60,10 +60,10 @@ interface RawFeedItem {
 
 export function parseFeed(xml: string): Episode[] {
   const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_" });
-  const parsed = parser.parse(xml);
+  const parsed = parser.parse(xml) as { rss?: { channel?: { item?: RawFeedItem | RawFeedItem[] } } };
   if (!parsed?.rss?.channel?.item) throw new Error("Invalid or empty RSS feed");
   const raw = parsed.rss.channel.item;
-  const items = (Array.isArray(raw) ? raw : [raw]) as RawFeedItem[];
+  const items = Array.isArray(raw) ? raw : [raw];
   return items.map((item) => {
     const audioUrl: string = item.enclosure?.["@_url"] ?? "";
     const adlMatch = audioUrl.match(/ADL\d+/);

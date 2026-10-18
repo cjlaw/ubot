@@ -7,7 +7,7 @@ export function handleUpvoteReaction(reaction: MessageReaction, user: User): str
 
 export function handleTwssReaction(reaction: MessageReaction, user: User): string {
   const content = formatContent(reaction.message.content);
-  return `<@${user.id}> said ${reaction.emoji} to ${content}`;
+  return `<@${user.id}> said ${String(reaction.emoji)} to ${content}`;
 }
 
 const formatContent = (content: string | null): string => {

@@ -10,7 +10,8 @@
     "test": "mocha",
     "build": "tsc",
     "dep-cmd": "node dist/deploy-commands.js",
-    "typecheck:test": "tsc -p tsconfig.test.json"
+    "typecheck:test": "tsc -p tsconfig.test.json",
+    "lint": "eslint ."
   },
   "repository": {
     "type": "git",
@@ -41,14 +42,19 @@
     "fast-xml-parser": "^5.11.2"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@huggingface/transformers": "^4.3.1",
+    "@stylistic/eslint-plugin": "^5.10.0",
     "@types/chai": "^5.2.3",
     "@types/mocha": "^10.0.10",
     "@types/node": "^24",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "chai": "^6.3.0",
     "eslint": "^10.12.0",
+    "globals": "^17.13.0",
     "mocha": "^12.0.3",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "typescript-eslint": "^8.71.2"
   }
 }
