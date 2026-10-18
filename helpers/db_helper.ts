@@ -25,7 +25,11 @@ export function runMigrations(db: DatabaseSync): number {
       db.exec(`PRAGMA user_version = ${next}`);
       db.exec("COMMIT");
     } catch (err) {
-      db.exec("ROLLBACK");
+      try {
+        db.exec("ROLLBACK");
+      } catch {
+        // Keep the original migration error; a failed rollback would mask it.
+      }
       throw err;
     }
     version = next;
@@ -43,6 +47,11 @@ export function openDatabase(path: string = process.env.DB_PATH || DEFAULT_DB_PA
       throw new Error(`Could not enable WAL journal mode for ${path} (got "${mode}")`);
     }
   }
-  runMigrations(db);
+  try {
+    runMigrations(db);
+  } catch (err) {
+    db.close();
+    throw err;
+  }
   return db;
 }

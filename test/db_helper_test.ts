@@ -73,4 +73,43 @@ describe("db_helper", () => {
     }
     expect(closed).to.equal(true);
   });
+
+  describe("when a migration step fails", () => {
+    const proto = DatabaseSync.prototype;
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    const originalExec = proto.exec;
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    const originalClose = proto.close;
+
+    afterEach(() => {
+      proto.exec = originalExec;
+      proto.close = originalClose;
+    });
+
+    it("closes the handle and rethrows when migrations fail in openDatabase", () => {
+      let closed = false;
+      proto.exec = function(this: DatabaseSync, sql: string) {
+        if (sql.startsWith("PRAGMA user_version =")) throw new Error("migration boom");
+        return originalExec.call(this, sql);
+      };
+      proto.close = function(this: DatabaseSync) {
+        closed = true;
+        originalClose.call(this);
+      };
+
+      expect(() => openDatabase(":memory:")).to.throw("migration boom");
+      expect(closed).to.equal(true);
+    });
+
+    it("rethrows the original migration error when ROLLBACK also fails", () => {
+      db = new DatabaseSync(":memory:");
+      proto.exec = function(this: DatabaseSync, sql: string) {
+        if (sql.startsWith("PRAGMA user_version =")) throw new Error("migration boom");
+        if (sql === "ROLLBACK") throw new Error("rollback boom");
+        return originalExec.call(this, sql);
+      };
+
+      expect(() => runMigrations(db as DatabaseSync)).to.throw("migration boom");
+    });
+  });
 });
