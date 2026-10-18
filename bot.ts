@@ -17,6 +17,7 @@ import type { Command } from "./types.js";
 
 const token = process.env.bot_token;
 const facepalmEnabled = process.env.facepalmEnabled === "true";
+const kumaPushUrl = process.env.KUMA_PUSH_URL;
 
 if (!token) {
   console.error("Error: bot_token is not set in environment variables.");
@@ -56,6 +57,12 @@ client.once(Events.ClientReady, () => {
   if (!arnieEmoji) console.warn("Warning: sbfvgsArnie emoji not found — Arnie responses will not include the emoji");
   if (!process.env.ANTHROPIC_API_KEY) console.warn("Warning: ANTHROPIC_API_KEY is not set — /findepisode will use fuzzy fallback only");
   getEpisodes().catch(err => console.error("Failed to warm episode cache:", (err as Error).message));
+  if (kumaPushUrl) {
+    setInterval(() => {
+      if (!client.isReady()) return;
+      fetch(`${kumaPushUrl}?status=up&msg=OK&ping=${client.ws.ping}`).catch(() => {});
+    }, 60_000);
+  }
   console.log("ubot is ready!");
 });
 

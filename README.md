@@ -35,6 +35,7 @@ A Discord bot for the SBFVGS gaming community server. Built with [Discord.js v14
    facepalmEnabled=           # optional; set to "true" to enable facepalm responses
    ANTHROPIC_API_KEY=         # optional; required for smart episode matching in /findepisode
    FINDEPISODE_RATE_LIMIT_MAX= # optional; max /findepisode uses per user per 10 min (default: 5)
+   KUMA_PUSH_URL=             # optional; Uptime Kuma push monitor URL (no query string) — heartbeat sent every 60s
    ```
 3. `npm run build` — compiles TypeScript to `dist/`
 4. `npm run dep-cmd` — registers slash commands with Discord (required on first run and after adding, removing, renaming, or changing slash command definitions)

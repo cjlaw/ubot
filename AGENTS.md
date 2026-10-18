@@ -66,6 +66,7 @@
   - `guildId` — Discord guild ID (used by `dep-cmd` to register slash commands)
   - `facepalmEnabled` — optional; set to `"true"` to enable facepalm responses
   - `ANTHROPIC_API_KEY` — required for `/findepisode` smart search; falls back to fuzzy match if missing
+  - `KUMA_PUSH_URL` — optional; Uptime Kuma push monitor URL without query string. When set, `bot.ts` pushes a heartbeat (with gateway ping) every 60s while the client is ready. Prod points at the media server's Kuma over Tailscale (100.x IP, not MagicDNS — containers don't resolve tailnet names).
   - `HF_CACHE_DIR` — optional; overrides where `@huggingface/transformers` caches the embedding model (default: inside `node_modules`). Set to a persistent path (e.g. `/hf-cache`) in containers.
 
 **Dependencies of note:**
