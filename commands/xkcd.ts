@@ -34,7 +34,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
 
     await interaction.editReply(replyContent);
   } catch (error) {
-    console.error(`An error occurred in the xkcd command: ${error}`);
+    console.error(`An error occurred in the xkcd command: ${String(error)}`);
     await interaction.editReply("Sorry, I couldn't fetch a comic right now :(");
   }
 }

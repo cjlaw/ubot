@@ -13,8 +13,6 @@ const reaction = {
 
 const user = { id: 5678 } as unknown as User;
 
-const emoji = "<:test_emoji:>";
-
 describe("#reaction: upvote", () => {
   it("should return a message about which message was upvoted", () => {
     (reaction as unknown as { message: { content: string } }).message.content = "test message";

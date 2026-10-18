@@ -14,7 +14,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     const response = await jokeResult.text();
     await interaction.editReply(response);
   } catch (error) {
-    console.error(`An error occurred in the joke command: ${error}`);
+    console.error(`An error occurred in the joke command: ${String(error)}`);
     await interaction.editReply("Sorry, I couldn't fetch a joke right now :(");
   }
 }

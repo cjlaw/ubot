@@ -68,6 +68,7 @@ client.once(Events.ClientReady, () => {
   console.log("ubot is ready!");
 });
 
+// eslint-disable-next-line @typescript-eslint/no-misused-promises -- #164
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -93,6 +94,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 
+// eslint-disable-next-line @typescript-eslint/no-misused-promises -- #164
 client.on(Events.MessageReactionAdd, async (reaction, user) => {
   if (reaction.partial) {
     try {
@@ -105,25 +107,31 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
 
   if ("send" in reaction.message.channel) {
     if (reaction.emoji.name === "upvote") {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises -- #164
       reaction.message.channel.send(handleUpvoteReaction(reaction as MessageReaction, user as User));
     }
 
     if (reaction.emoji.name === "twss") {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises -- #164
       reaction.message.channel.send(handleTwssReaction(reaction as MessageReaction, user as User));
     }
   }
 });
 
+// eslint-disable-next-line @typescript-eslint/no-misused-promises, @typescript-eslint/require-await -- #164
 client.on(Events.MessageCreate, async (message) => {
   if (!message.content || message.author.bot) return;
 
   const arnieMessage = handleArnieMention(message, arnieEmoji);
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises -- #164
   if (arnieMessage) message.channel.send(arnieMessage);
 
   if (facepalmEnabled) {
     const facepalmMessage = handleFacepalmMention(message);
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises -- #164
     if (facepalmMessage) message.channel.send(facepalmMessage);
   }
 });
 
+// eslint-disable-next-line @typescript-eslint/no-floating-promises -- #164
 client.login(token);

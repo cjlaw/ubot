@@ -42,6 +42,6 @@ export function handleArnieMention(message: Message, arnieEmoji: GuildEmoji | un
     !(arnieEmoji && message.content.includes(arnieEmoji.id))
   ) {
     const quote = ArnieQuotes[Math.floor(Math.random() * ArnieQuotes.length)];
-    return arnieEmoji ? `${quote} ${arnieEmoji}` : quote;
+    return arnieEmoji ? `${quote} ${arnieEmoji.toString()}` : quote;
   }
 }

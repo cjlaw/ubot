@@ -180,8 +180,9 @@ function matches(episode: Episode, target: Target): boolean {
   if (
     target.titleIncludes &&
     episode.title.toLowerCase().includes(target.titleIncludes.toLowerCase())
-  )
+  ) {
     return true;
+  }
   return false;
 }
 

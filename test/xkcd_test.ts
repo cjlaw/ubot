@@ -20,7 +20,7 @@ describe("#command: xkcd", () => {
     latestComic = info.num;
   });
 
-  describe("-when getting a random comic", async () => {
+  describe("-when getting a random comic", () => {
     it("should return a valid comic", async () => {
       const interaction = mockInteraction("random");
       await execute(interaction as unknown as ChatInputCommandInteraction);

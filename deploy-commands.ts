@@ -28,7 +28,7 @@ for (const file of commandFiles) {
 
 const rest = new REST({ version: "10" }).setToken(token);
 
-(async () => {
+void (async () => {
   try {
     console.log(`Started refreshing ${commands.length} application (/) commands.`);
 
