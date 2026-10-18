@@ -22,7 +22,8 @@
       "Bash(gh issue*)",
       "Bash(gh pr*)",
       "Bash(gh label*)",
-      "Bash(gh repo*)"
+      "Bash(gh repo*)",
+      "Bash(../bin/agent-label.sh*)"
     ]
   }
 }
