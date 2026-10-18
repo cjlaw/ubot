@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { execute } from "../commands/xkcd.js";
 import type { ChatInputCommandInteraction } from "discord.js";
 
-let latestComic = 1941;
+const latestComic = 1941;
 
 const mockInteraction = (selection: string | null) => {
   let reply = "";
@@ -14,10 +14,24 @@ const mockInteraction = (selection: string | null) => {
   };
 };
 
+// Serves a fake xkcd archive so the tests need no network.
+const fakeXkcd = async (input: string | URL | Request): Promise<Response> => {
+  const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+  const match = /^https:\/\/xkcd\.com\/(?:(\d+)\/)?info\.0\.json$/.exec(url);
+  if (!match) throw new Error(`unexpected fetch: ${url}`);
+  const num = match[1] ? parseInt(match[1], 10) : latestComic;
+  return new Response(JSON.stringify({ num, title: `Comic ${num}`, img: `https://imgs.xkcd.com/${num}.png`, alt: "alt text" }));
+};
+
 describe("#command: xkcd", () => {
-  before("get number of latest XKCD comic", async () => {
-    const info = await fetch("https://xkcd.com/info.0.json").then((r) => r.json()) as { num: number };
-    latestComic = info.num;
+  const realFetch = globalThis.fetch;
+
+  before(() => {
+    globalThis.fetch = fakeXkcd;
+  });
+
+  after(() => {
+    globalThis.fetch = realFetch;
   });
 
   describe("-when getting a random comic", () => {
@@ -61,6 +75,19 @@ describe("#command: xkcd", () => {
       expect(reply.indexOf("#")).to.not.equal(-1);
       const comicNumber = parseInt(reply.substring(1, reply.indexOf(" ")));
       expect(comicNumber).to.equal(221);
+    });
+  });
+
+  describe("-when the comic service is unreachable", () => {
+    it("should reply with an apology instead of throwing", async () => {
+      globalThis.fetch = async () => { throw new Error("offline"); };
+      try {
+        const interaction = mockInteraction("latest");
+        await execute(interaction as unknown as ChatInputCommandInteraction);
+        expect(interaction.getReply()).to.contain("couldn't fetch a comic");
+      } finally {
+        globalThis.fetch = fakeXkcd;
+      }
     });
   });
 });
