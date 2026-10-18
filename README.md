@@ -11,6 +11,7 @@ A Discord bot for the SBFVGS gaming community server. Built with [Discord.js v14
 | `/xkcd [selection]` | Fetches an xkcd comic — `"latest"`, `"random"`, or a specific number (default: random) |
 | `/timestamp <input> <timezone>` | Generates Discord timestamp tags from natural language input (e.g. "tomorrow at 5pm", "in 5 hours") — reply is ephemeral |
 | `/findepisode <query>` | Searches SBFVGS podcast episodes by topic, guest, game, or description — LLM-powered when `ANTHROPIC_API_KEY` is set, fuzzy match fallback otherwise |
+| `/featurerequest` | Opens a form (title + description) and posts the request to the feature-requests channel, mentioning the maintainer; 1 hour cooldown per user |
 
 ## Bot behaviors
 
