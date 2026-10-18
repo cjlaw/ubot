@@ -7,6 +7,7 @@ import {
   Events,
   GatewayIntentBits,
   Partials,
+  Status,
 } from "discord.js";
 import type { MessageReaction, User } from "discord.js";
 import { handleUpvoteReaction, handleTwssReaction } from "./helpers/reaction_helper.js";
@@ -59,7 +60,8 @@ client.once(Events.ClientReady, () => {
   getEpisodes().catch(err => console.error("Failed to warm episode cache:", (err as Error).message));
   if (kumaPushUrl) {
     setInterval(() => {
-      if (!client.isReady()) return;
+      // isReady() stays true through gateway outages; only per-shard status tracks reconnects
+      if (!client.isReady() || !client.ws.shards.every((s) => s.status === Status.Ready)) return;
       fetch(`${kumaPushUrl}?status=up&msg=OK&ping=${client.ws.ping}`).catch(() => {});
     }, 60_000);
   }
