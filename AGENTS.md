@@ -94,6 +94,7 @@ podman run --rm --platform linux/amd64 --env-file .env -v ubot-hf-cache:/hf-cach
 - Keep RSS parsing and fuzzy filtering in `helpers/episode_helper.js` pure/testable; keep network and LLM orchestration separate.
 - Avoid adding command files that depend on manual imports in `bot.js`; command discovery is directory-based.
 - Avoid changing emoji names or environment variable names without updating all call sites and tests.
+- When adding, renaming, or removing an environment variable, update `.env.example` and the `.env` list above.
 
 ## Code review
 
