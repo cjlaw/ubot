@@ -3,8 +3,13 @@ services:
     image: ghcr.io/cjlaw/ubot:latest
     env_file: .env
     restart: unless-stopped
+    volumes:
+      - ubot-data:/app/data
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
+
+volumes:
+  ubot-data: {}
