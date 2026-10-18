@@ -49,10 +49,12 @@
 
 ## Project Structure Hints
 
-- `bot.js`: entry point. Dynamically imports every `.js` file in `commands/` into a Collection keyed by `command.data.name`. Handles `InteractionCreate` (slash commands), `MessageReactionAdd` (emoji reactions), and `MessageCreate` (message mentions) events. Warms the episode cache at startup.
+- `bot.js`: entry point. Dynamically imports every `.js` file in `commands/` into a Collection keyed by `command.data.name`. Wires the `InteractionCreate` (slash commands), `MessageReactionAdd` (emoji reactions), and `MessageCreate` (message mentions) handlers from `helpers/event_handlers.js`. Warms the episode cache at startup.
 - `deploy-commands.js`: registers slash commands with Discord REST API. Intentionally separate from `bot.js`.
 - `commands/`: slash command modules loaded automatically at runtime.
 - `helpers/`:
+  - `event_handlers.js` — Discord event handler bodies (`handleInteraction`, `handleReaction`, `handleMessage`) plus `registerProcessHandlers` and `registerClientLogging`; all Discord call failures are caught and logged so the bot stays online
+  - `error_helper.js` — `formatError(err)`; logs stack/message, never the raw error object (a `DiscordAPIError` carries the outgoing message body)
   - `reaction_helper.js` — handles `upvote` and `twss` emoji reactions
   - `arnie_helper.js` — replies with Arnold Schwarzenegger quotes when "arnie" is mentioned; `sbfvgsArnie` emoji is resolved from the Discord client cache at startup and passed in
   - `facepalm_helper.js` — optionally replies to a specific user (gated by `facepalmEnabled`); uses display name instead of `<@userId>` intentionally

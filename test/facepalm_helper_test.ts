@@ -4,7 +4,7 @@ import type { Message } from "discord.js";
 
 const message = {
   content: "",
-  react: () => {},
+  react: async () => {},
 } as unknown as Message;
 
 describe("#reaction: trump", () => {

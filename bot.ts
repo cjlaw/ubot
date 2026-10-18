@@ -9,10 +9,14 @@ import {
   Partials,
   Status,
 } from "discord.js";
-import type { MessageReaction, User } from "discord.js";
-import { handleUpvoteReaction, handleTwssReaction } from "./helpers/reaction_helper.js";
-import { handleArnieMention } from "./helpers/arnie_helper.js";
-import { handleFacepalmMention } from "./helpers/facepalm_helper.js";
+import {
+  handleInteraction,
+  handleReaction,
+  handleMessage,
+  registerProcessHandlers,
+  registerClientLogging,
+} from "./helpers/event_handlers.js";
+import { formatError } from "./helpers/error_helper.js";
 import { getEpisodes } from "./helpers/episode_helper.js";
 import type { Command } from "./types.js";
 
@@ -24,6 +28,8 @@ if (!token) {
   console.error("Error: bot_token is not set in environment variables.");
   process.exit(1);
 }
+
+registerProcessHandlers(process, (code) => process.exit(code));
 
 class UbotClient extends Client {
   commands = new Collection<string, Command>();
@@ -38,6 +44,8 @@ const client = new UbotClient({
   ],
   partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
+
+registerClientLogging(client);
 
 const __dirname = import.meta.dirname;
 
@@ -68,70 +76,19 @@ client.once(Events.ClientReady, () => {
   console.log("ubot is ready!");
 });
 
-// eslint-disable-next-line @typescript-eslint/no-misused-promises -- #164
-client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
-
-  const command = client.commands.get(interaction.commandName);
-
-  if (!command) return;
-
-  try {
-    await command.execute(interaction);
-  } catch (error) {
-    console.error(error);
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp({
-        content: "There was an error while executing this command!",
-        ephemeral: true,
-      });
-    } else {
-      await interaction.reply({
-        content: "There was an error while executing this command!",
-        ephemeral: true,
-      });
-    }
-  }
+client.on(Events.InteractionCreate, (interaction) => {
+  void handleInteraction(interaction, client.commands);
 });
 
-// eslint-disable-next-line @typescript-eslint/no-misused-promises -- #164
-client.on(Events.MessageReactionAdd, async (reaction, user) => {
-  if (reaction.partial) {
-    try {
-      await reaction.fetch();
-    } catch (error) {
-      console.error("Something went wrong when fetching the message:", error);
-      return;
-    }
-  }
-
-  if ("send" in reaction.message.channel) {
-    if (reaction.emoji.name === "upvote") {
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises -- #164
-      reaction.message.channel.send(handleUpvoteReaction(reaction as MessageReaction, user as User));
-    }
-
-    if (reaction.emoji.name === "twss") {
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises -- #164
-      reaction.message.channel.send(handleTwssReaction(reaction as MessageReaction, user as User));
-    }
-  }
+client.on(Events.MessageReactionAdd, (reaction, user) => {
+  void handleReaction(reaction, user);
 });
 
-// eslint-disable-next-line @typescript-eslint/no-misused-promises, @typescript-eslint/require-await -- #164
-client.on(Events.MessageCreate, async (message) => {
-  if (!message.content || message.author.bot) return;
-
-  const arnieMessage = handleArnieMention(message, arnieEmoji);
-  // eslint-disable-next-line @typescript-eslint/no-floating-promises -- #164
-  if (arnieMessage) message.channel.send(arnieMessage);
-
-  if (facepalmEnabled) {
-    const facepalmMessage = handleFacepalmMention(message);
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises -- #164
-    if (facepalmMessage) message.channel.send(facepalmMessage);
-  }
+client.on(Events.MessageCreate, (message) => {
+  void handleMessage(message, arnieEmoji, facepalmEnabled);
 });
 
-// eslint-disable-next-line @typescript-eslint/no-floating-promises -- #164
-client.login(token);
+client.login(token).catch((err: unknown) => {
+  console.error("Failed to log in:", formatError(err));
+  process.exit(1);
+});
