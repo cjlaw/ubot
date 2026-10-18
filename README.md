@@ -22,7 +22,7 @@ A Discord bot for the SBFVGS gaming community server. Built with [Discord.js v14
 
 ## Prerequisites
 
-- Node.js 24 (`node --version` should be `v24.x.x`)
+- Node.js 24.15 or newer (`node --version` should be `v24.x.x`)
 - A Discord bot application: [Discord Developer Portal](https://discord.com/developers/applications)
 
 ## Local setup
@@ -32,6 +32,10 @@ A Discord bot for the SBFVGS gaming community server. Built with [Discord.js v14
 3. `npm run build` — compiles TypeScript to `dist/`
 4. `npm run dep-cmd` — registers slash commands with Discord (required on first run and after adding, removing, renaming, or changing slash command definitions)
 5. `node dist/bot.js`
+
+### Database
+
+ubot keeps durable state in a SQLite file (Node's built-in `node:sqlite`). Set the location with the `DB_PATH` env var; the default is `data/ubot.db` relative to the working directory. In the container, `DB_PATH` is `/app/data/ubot.db`, which lives on the `ubot-data` named volume, so it survives redeploys. Migrations run automatically at startup, and the bot exits if the database can't be opened.
 
 ### Prod-faithful local run (via Podman)
 

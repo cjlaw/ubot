@@ -18,6 +18,7 @@ import {
 } from "./helpers/event_handlers.js";
 import { formatError } from "./helpers/error_helper.js";
 import { getEpisodes } from "./helpers/episode_helper.js";
+import { openDatabase, getSchemaVersion } from "./helpers/db_helper.js";
 import type { Command } from "./types.js";
 
 const token = process.env.bot_token;
@@ -30,6 +31,9 @@ if (!token) {
 }
 
 registerProcessHandlers(process, (code) => process.exit(code));
+
+const db = openDatabase();
+console.log(`Database ready at ${db.location()} (schema v${getSchemaVersion(db)})`);
 
 class UbotClient extends Client {
   commands = new Collection<string, Command>();

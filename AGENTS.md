@@ -59,6 +59,7 @@
   - `arnie_helper.js` — replies with Arnold Schwarzenegger quotes when "arnie" is mentioned; `sbfvgsArnie` emoji is resolved from the Discord client cache at startup and passed in
   - `facepalm_helper.js` — optionally replies to a specific user (gated by `facepalmEnabled`); uses display name instead of `<@userId>` intentionally
   - `timestamp_helper.js` — Discord timestamp format codes (`formats`) and `getOffsetMinutes` for IANA timezone → UTC offset conversion used by chrono-node
+  - `db_helper.ts` — `openDatabase()` (opens the SQLite file at `DB_PATH`, WAL mode, runs migrations), `runMigrations`, `getSchemaVersion` (via `PRAGMA user_version`), `LATEST_SCHEMA_VERSION`, `DEFAULT_DB_PATH`. Migrations are an append-only array of SQL strings; a DB newer than the code is left alone. Startup fails fast if the DB can't be opened.
   - `episode_helper.js` — fetches and caches the SBFVGS RSS feed (24h TTL, warmed at startup), fuzzy-filters episodes (`fuzzyFilter`), vector-filters episodes (`embedFilter`), caches episode vectors (`getEpisodeVectors`), and calls Claude Haiku to pick the best match. `parseFeed`, `fuzzyFilter`, and `embedFilter` are pure/tested; `searchEpisodes` requires network + API key.
   - `embedding_helper.js` — lazy `Xenova/all-MiniLM-L6-v2` embedding pipeline via `@huggingface/transformers`; exports `embed(texts)`, `embedOne(text)`, `cosineSimilarity(a, b)`, and `_setEmbedder(fn)` test seam. Model is loaded via dynamic `import()` inside the singleton so `onnxruntime-node` is never loaded in unit tests.
 - `test/`: Mocha/Chai tests for commands and helpers.
@@ -68,6 +69,7 @@
   - `guildId` — Discord guild ID (used by `dep-cmd` to register slash commands)
   - `facepalmEnabled` — optional; set to `"true"` to enable facepalm responses
   - `ANTHROPIC_API_KEY` — required for `/findepisode` smart search; falls back to fuzzy match if missing
+  - `DB_PATH` — optional; SQLite file path. Default `data/ubot.db` relative to cwd; the Dockerfile sets `/app/data/ubot.db`, on the `ubot-data` volume.
   - `KUMA_PUSH_URL` — optional; Uptime Kuma push monitor URL without query string. When set, `bot.ts` pushes a heartbeat (with gateway ping) every 60s while the client is ready. Prod points at the media server's Kuma over Tailscale (100.x IP, not MagicDNS — containers don't resolve tailnet names).
   - `FEATURE_REQUEST_CHANNEL_ID` — optional; channel snowflake where `/featurerequest` posts. If unset or unpostable, submissions reply with a "couldn't be filed" error.
   - `FEATURE_REQUEST_MAINTAINER_ID` — optional; user snowflake mentioned (the only ping) on each `/featurerequest` post.
@@ -77,6 +79,7 @@
 
 - `chrono-node` — natural language date parsing for `/timestamp` (e.g. "tomorrow at 5pm")
 - `@anthropic-ai/sdk` — Anthropic API client used by `episode_helper.js` for LLM-powered episode matching
+- `node:sqlite` — Node built-in SQLite driver (`DatabaseSync`) used by `db_helper.ts`; needs Node >=24.15 to avoid the ExperimentalWarning
 - `fast-xml-parser` — RSS feed parsing used by `episode_helper.js`
 - `@huggingface/transformers` — local embedding model (`Xenova/all-MiniLM-L6-v2`) used by `embedding_helper.js` for semantic episode retrieval; requires `onnxruntime-node` native binary (not available on Intel Mac — use the linux/amd64 dev container for real-model work). **devDependency only** — embeddings are parked (they underperformed fuzzy in eval); the live `/findepisode` path uses `fuzzyFilter`. `embedFilter`/`getEpisodeVectors` exist for offline eval (`scripts/eval_findepisode.ts`) and a future hybrid-retrieval attempt.
 

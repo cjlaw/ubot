@@ -2,6 +2,7 @@ node_modules
 .env
 RUNBOOK.md
 dist/
+data/
 
 # AI working state
 .ai/reviews/
