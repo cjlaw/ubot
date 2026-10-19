@@ -58,7 +58,54 @@ interface RawFeedItem {
   pubDate?: string;
 }
 
-export function parseFeed(xml: string): Episode[] {
+export function slugifyTitle(title: string): string {
+  return String(title)
+    .toLowerCase()
+    .replace(/['’]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export function buildSiteUrl(title: string, pubDate: Date | null): string | null {
+  if (!pubDate || Number.isNaN(pubDate.getTime())) return null;
+  const slug = slugifyTitle(title);
+  if (slug === "") return null;
+  const yyyy = String(pubDate.getUTCFullYear()).padStart(4, "0");
+  const mm = String(pubDate.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(pubDate.getUTCDate()).padStart(2, "0");
+  return `https://sbfvgs.com/${yyyy}/${mm}/${dd}/${slug}/`;
+}
+
+// Derived from the Megaphone feed vs https://sbfvgs.com/sitemap.xml as of 2026-10-18,
+// plus human-approved corrections where the site's post date differs from the feed's
+// UTC date. Only holds episodes whose site URL differs from buildSiteUrl. Values are
+// URLs (no nulls today), but the type still allows null = "no page -> player link".
+// Keyed by exact feed title.
+const SITE_URL_OVERRIDES: ReadonlyMap<string, string | null> = new Map<string, string | null>([
+  ["SBFVGS - Ep.195: The 2023 SBFVGSVGAGOTY's!", "https://sbfvgs.com/2023/12/24/sbfvgs-ep-195-the-sbfvgsvgagotys/"],
+  ["SBFVGS - Ep.191: Zelda's Legacy, Goldfish Gamers and Microsoft's Mixed Messages!", "https://sbfvgs.com/2023/07/10/sbfvgs-ep-191-zeldas-legacy-gaming-goldfish-and-microsofts-mixed-messages/"],
+  ["SBFVGS - Ep.182: A Very Super Best Friends Video Game Christmas VIII!", "https://sbfvgs.com/2021/12/19/sbfvgs-ep-182-a-very-super-best-friends-video-game-christmas-viii/"],
+  ["SBFVGS - Ep.166: Resident Evil Village Revealed!", "https://sbfvgs.com/2021/02/01/sbfvgs-ep-166-resident-evil-village-revealed/"],
+  ["SBFVGS - Ep.159: Spooky Games We Will NEVER Play -with Gabe Patillo!", "https://sbfvgs.com/2020/10/27/sbfvgs-ep-159-spooky-games-we-will-never-play-with-gabe-patillo/"],
+  ["SBFVGS - Ep.139: Microsoft and Sony's Weird 2020 Strategies!", "https://sbfvgs.com/2020/01/20/sbfvgs-ep-139-microsoft-sonys-weird-2020-strategies/"],
+  ["SBFVGS - Ep.108: Of Spider-Buns and Sophie Brennan!", "https://sbfvgs.com/2018/11/12/sbfvgs-ep-108-of-spider-buns-sophie-brennan/"],
+  ["SBFVGS - Ep.99: Is Google Getting Into Games?", "https://sbfvgs.com/2018/07/09/sbfvgs-ep-99-is-google-getting-into-console-games/"],
+  ["SBFVGS - Ep.95: No Virtual Console on Switch??", "https://sbfvgs.com/2018/05/14/sbfvgs-ep-95-no-virtual-console-on-switch-but-for-why/"],
+  ["SBFVGS - Ep.91: Is the PlayStation 5 Right Around the Corner?", "https://sbfvgs.com/2018/03/19/sbfvgs-ep-91-is-the-ps5-right-around-the-corner/"],
+  ["SBFVGS - Ep.86: Our Top 5 Games of 2017 and Game of the Year!", "https://sbfvgs.com/2018/01/08/sbfvgs-ep-86-top-5-games-of-2017-and-our-game-of-the-year/"],
+  ["SBFVGS - Ep.71: E3 Dreams / Will Scorpio Change Everything?", "https://sbfvgs.com/2017/06/12/sbfvgs-ep-71-e3-dreams-will-xbox-one-x-change-everything/"],
+  ["SBFVGS - Ep.62: Will the Final Fantasy franchise regain its former greatness?", "https://sbfvgs.com/2017/02/06/sbfvgs-ep-62-will-final-fantasy-regain-its-former-greatness/"],
+  ["SBFVGS - Ep.58: PSX and The 2016 SBFVGSVGAs!", "https://sbfvgs.com/2016/12/12/sbfvgs-ep-58-psx-the-2016-sbfvgsvgas/"],
+  ["SBFVGS - Uncharted 4 Spoilercast!", "https://sbfvgs.com/2016/07/18/sbfvgs-presents-the-uncharted-4-spoilercast/"],
+  ["Super Best Friends Video Game Sleepover - Episode 18", "https://sbfvgs.com/2015/06/01/super-best-friends-video-game-sleepover-episode-18-is-live/"],
+  ["Super Best Friends Video Game Sleepover - Episode 17", "https://sbfvgs.com/2015/05/18/super-best-friends-video-game-sleepover-episode-17-is-live/"],
+  ["Super Best Friends Video Game Sleepover - Episode 6", "https://sbfvgs.com/2014/12/15/super-best-friends-video-game-sleepover-episode-6-is-live/"],
+  ["Super Best Friends Video Game Sleepover - Episode 1", "https://sbfvgs.com/2014/10/14/sbfvgs-podcast-episode-1-is-live/"],
+]);
+
+export const _siteUrlOverrides: ReadonlyMap<string, string | null> = SITE_URL_OVERRIDES;
+
+export function parseFeed(xml: string, overrides: ReadonlyMap<string, string | null> = SITE_URL_OVERRIDES): Episode[] {
   const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_" });
   const parsed = parser.parse(xml) as { rss?: { channel?: { item?: RawFeedItem | RawFeedItem[] } } };
   if (!parsed?.rss?.channel?.item) throw new Error("Invalid or empty RSS feed");
@@ -70,12 +117,18 @@ export function parseFeed(xml: string): Episode[] {
     const playerUrl = adlMatch
       ? `https://playlist.megaphone.fm/?e=${adlMatch[0]}`
       : "https://sbfvgs.com";
+    const title: string = item.title ?? "";
+    const pubDate = item.pubDate ? new Date(item.pubDate) : null;
+    const siteUrl = overrides.has(title)
+      ? overrides.get(title)!
+      : buildSiteUrl(title, pubDate);
     return {
       number: item["itunes:episode"] ?? null,
-      title: item.title ?? "",
+      title,
       description: stripHtml(item.description ?? ""),
-      pubDate: item.pubDate ? new Date(item.pubDate) : null,
+      pubDate,
       playerUrl,
+      siteUrl,
       audioUrl,
     };
   });

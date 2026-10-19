@@ -100,7 +100,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
         const header = date
           ? `**${i + 1}. ${epTitle}** — ${date}`
           : `**${i + 1}. ${epTitle}**`;
-        return `${header}\n[Listen](${episode.playerUrl})\n${desc}`;
+        return `${header}\n[Listen](${episode.siteUrl ?? episode.playerUrl})\n${desc}`;
       })
       .join("\n\n");
     const description =

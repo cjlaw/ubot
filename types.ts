@@ -6,6 +6,7 @@ export interface Episode {
   description: string;
   pubDate: Date | null;
   playerUrl: string;
+  siteUrl: string | null;
   audioUrl: string;
 }
 
