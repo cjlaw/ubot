@@ -39,6 +39,7 @@ const FIXTURE_EPISODES: Episode[] = [
     description: "An interview about Hades.",
     pubDate: null,
     playerUrl: "https://example.com/10",
+    siteUrl: null,
     audioUrl: "",
   },
   {
@@ -47,6 +48,7 @@ const FIXTURE_EPISODES: Episode[] = [
     description: "Game of the year picks.",
     pubDate: null,
     playerUrl: "https://example.com/9",
+    siteUrl: null,
     audioUrl: "",
   },
 ];

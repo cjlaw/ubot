@@ -21,7 +21,6 @@ const FIXTURE_XML = `<?xml version="1.0" encoding="UTF-8"?>
     <item>
       <title>SBFVGS - Ep.9: GOTY Discussion</title>
       <description>The crew picks their game of the year winners for sbfvgsgoty.</description>
-      <pubDate>Mon, 01 Jan 2024 12:00:00 -0000</pubDate>
       <itunes:episode>9</itunes:episode>
       <enclosure url="https://pdcn.co/e/traffic.megaphone.fm/ADL9876543210.mp3?updated=456" length="0" type="audio/mpeg"/>
     </item>
@@ -135,8 +134,19 @@ describe("#command: findepisode", () => {
       expect(reply.embeds).to.have.length(1);
       const embed = reply.embeds[0].data;
       expect(embed.description).to.include("Ep. 10");
-      expect(embed.description).to.include("https://playlist.megaphone.fm/?e=ADL1234567890");
+      expect(embed.description).to.include("[Listen](https://sbfvgs.com/2024/01/15/sbfvgs-ep-10-hades-interview/)");
+      expect(embed.description).to.not.include("playlist.megaphone.fm/?e=ADL1234567890");
       expect(embed.description).to.include("**1.");
+    });
+
+    it("should fall back to the Megaphone player link when the episode has no pubDate", async () => {
+      _setAnthropicClient(mockAnthropicPick([0]) as unknown as Anthropic);
+      const interaction = mockInteraction("goty discussion");
+      await execute(interaction as unknown as ChatInputCommandInteraction);
+      const reply = interaction.getReply() as { embeds: { data: { description: string } }[] };
+      const description = reply.embeds[0].data.description;
+      expect(description).to.include("Ep. 9");
+      expect(description).to.include("[Listen](https://playlist.megaphone.fm/?e=ADL9876543210)");
     });
 
     it("should not show a fallback footer", async () => {
