@@ -36,11 +36,11 @@
     "minimatch@>=7.0.0 <11.0.1": "^11.0.1"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.7.0",
+    "@anthropic-ai/sdk": "^1.9.0",
     "chrono-node": "^2.10.3",
     "discord.js": "^14.28.1",
     "dotenv": "^18.0.10",
-    "fast-xml-parser": "^5.12.0"
+    "fast-xml-parser": "^5.12.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -51,11 +51,11 @@
     "@types/node": "^24",
     "@typescript/native": "npm:typescript@^7.0.2",
     "chai": "^6.3.0",
-    "eslint": "^10.14.0",
+    "eslint": "^10.15.0",
     "globals": "^17.14.0",
     "mocha": "^12.0.3",
     "tsx": "^4.23.15",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "typescript-eslint": "^8.72.2"
+    "typescript-eslint": "^8.73.0"
   }
 }
